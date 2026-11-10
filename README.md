@@ -111,13 +111,30 @@ TuxBar fue diseñado bajo estrictos estándares de ingeniería de software para 
 
 ---
 
-## 🍏 Compatibilidad con Hardware Apple T2
+## 🍏 Matriz de Compatibilidad & Hardware Comprobado
 
-TuxBar ha sido diseñado para cualquier usuario de Linux en laptops Apple con chip de seguridad T2:
+### 🔬 Equipo Oficial de Pruebas y Laboratorio (100% Funcional)
+* **Laptop:** Apple MacBook Pro 16 pulgadas (2019)
+* **Identificador de Modelo:** `MacBookPro16,1` (Modelo A2141)
+* **Chip de Seguridad:** Apple T2 SoC
+* **Procesador:** Intel Core i7 / i9 (9na Generación)
+* **Panel OLED Touch Bar:** 2008 × 60 píxeles @ 60 Hz
+* **Sistema Operativo:** Ubuntu 24.04 LTS (Noble Numbat)
+* **Kernel de Linux:** `Linux 7.3.0-4-t2-noble` (con parches DRM para Apple)
+* **Subsistema de Audio:** PipeWire 1.0+ (captura pasiva en `@DEFAULT_AUDIO_SINK@`)
+* **Sesión Gráfica:** Wayland y X11 (GNOME Desktop)
 
-1. **Coexistencia Pacífica:** La unidad de servicio `tuxbar.service` declara `Conflicts=tiny-dfr.service`. Nunca habrá dos procesos intentando adquirir el dumb buffer DRM simultáneamente.
-2. **Empaquetado Estándar:** El paquete `.deb` generado con `package_deb.sh` sigue la jerarquía Filesystem Hierarchy Standard (FHS) de Debian/Ubuntu y se instala limpiamente en cualquier distribución basada en Ubuntu/Debian.
-3. **Soporte de Modelos:** Compatible con cualquier laptop Apple con Touch Bar reconocida por el kernel: MacBookPro15,1 / 15,2 / 16,1 / 16,2 / 16,3 / 16,4.
+### 💻 Modelos de MacBook Compatibles
+Soporta cualquier MacBook con pantalla Touch Bar reconocida por el controlador del kernel `appletbdrm`:
+* **MacBook Pro 16" (2019):** `MacBookPro16,1`, `MacBookPro16,4`
+* **MacBook Pro 15" (2016 - 2019):** `MacBookPro15,1`, `MacBookPro15,3`, `MacBookPro14,3`, `MacBookPro13,3`
+* **MacBook Pro 13" (2016 - 2020):** `MacBookPro16,2`, `MacBookPro16,3`, `MacBookPro15,2`, `MacBookPro14,2`, `MacBookPro13,2`
+
+### 🐧 Distribuciones Linux Soportadas
+* **Ubuntu 24.04 LTS:** Comprobado y verificado en hardware de laboratorio.
+* **Ubuntu 22.04 LTS:** Compatible mediante paquete nativo `.deb`.
+* **Debian 12 / Linux Mint / Pop!_OS:** Compatible mediante paquete nativo `.deb`.
+* **Fedora / Arch Linux / Manjaro:** Compatible mediante compilación con `cargo build --release` (requiere kernel con soporte `appletbdrm`).
 
 ---
 

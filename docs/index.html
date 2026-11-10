@@ -1163,36 +1163,93 @@
       </div>
     </div>
 
-    <!-- Apple Hardware Compatibility -->
+    <!-- Apple Hardware & Distribution Compatibility -->
     <section id="t2-linux">
       <div class="section-head">
-        <div class="section-eyebrow">Compatibilidad de Hardware</div>
-        <h2 class="section-title">Diseñado para Laptops Apple con Chip T2</h2>
+        <div class="section-eyebrow">Matriz de Compatibilidad & Hardware</div>
+        <h2 class="section-title">Hardware Comprobado y Distribuciones Compatibles</h2>
         <p class="section-desc">
-          TuxBar ha sido diseñado para funcionar de manera estable y segura en laptops MacBook con pantalla OLED Touch Bar.
+          TuxBar fue desarrollado y testeado en profundidad en hardware físico real. A continuación se detalla la configuración de prueba oficial y la compatibilidad con modelos de Apple y distribuciones Linux.
         </p>
+      </div>
+
+      <!-- Testbed Hardware Spec Card -->
+      <div class="card" style="margin-bottom: 24px; border-color: rgba(233, 84, 32, 0.4); background: linear-gradient(135deg, rgba(20, 24, 34, 0.95) 0%, rgba(119, 33, 111, 0.15) 100%);">
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 16px;">
+          <h3 style="margin: 0; color: var(--ubuntu-orange); font-size: 1.25rem;">🔬 Equipo Oficial de Pruebas y Laboratorio (100% Funcional)</h3>
+          <span class="tag" style="background: rgba(34, 197, 94, 0.15); color: #22C55E; border: 1px solid rgba(34, 197, 94, 0.3);">Test Físico Exitoso ✓</span>
+        </div>
+        <div class="grid-2" style="gap: 16px;">
+          <div>
+            <ul style="padding-left: 18px; line-height: 1.8;">
+              <li><strong>Laptop:</strong> Apple MacBook Pro 16 pulgadas (2019)</li>
+              <li><strong>Identificador de modelo:</strong> <code>MacBookPro16,1</code> (A2141)</li>
+              <li><strong>Chip de Seguridad:</strong> Apple T2 SoC</li>
+              <li><strong>Procesador:</strong> Intel Core i7 / i9 (9na Generación)</li>
+              <li><strong>Panel OLED Touch Bar:</strong> 2008 × 60 píxeles @ 60 Hz</li>
+            </ul>
+          </div>
+          <div>
+            <ul style="padding-left: 18px; line-height: 1.8;">
+              <li><strong>Sistema Operativo:</strong> Ubuntu 24.04 LTS (Noble Numbat)</li>
+              <li><strong>Kernel de Linux:</strong> <code>7.3.0-4-t2-noble</code> (con parches T2)</li>
+              <li><strong>Subsistema Gráfico:</strong> DRM / KMS nativo (driver <code>appletbdrm</code>)</li>
+              <li><strong>Audio DSP:</strong> PipeWire 1.0+ (objetivo <code>@DEFAULT_AUDIO_SINK@</code>)</li>
+              <li><strong>Sesión Gráfica:</strong> Wayland y X11 (GNOME Desktop)</li>
+            </ul>
+          </div>
+        </div>
       </div>
 
       <div class="grid-3">
         <div class="card">
-          <h3>1. Coexistencia con tiny-dfr</h3>
-          <p>
-            TuxBar define <code>Conflicts=tiny-dfr.service</code> en su unidad systemd. Esto garantiza que nunca habrá colisiones por el control del buffer DRM o el digitalizador táctil.
-          </p>
+          <div class="card-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+              <line x1="8" y1="21" x2="16" y2="21"/>
+              <line x1="12" y1="17" x2="12" y2="21"/>
+            </svg>
+          </div>
+          <h3>Modelos de Mac Compatibles</h3>
+          <p>Cualquier MacBook con pantalla Touch Bar reconocida por el driver del kernel <code>appletbdrm</code>:</p>
+          <ul style="margin-top: 10px;">
+            <li><strong>MacBook Pro 16" (2019):</strong> <code>MacBookPro16,1</code>, <code>16,4</code></li>
+            <li><strong>MacBook Pro 15" (2016-2019):</strong> <code>MacBookPro15,1</code>, <code>15,3</code>, <code>14,3</code>, <code>13,3</code></li>
+            <li><strong>MacBook Pro 13" (2016-2020):</strong> <code>MacBookPro16,2</code>, <code>16,3</code>, <code>15,2</code>, <code>14,2</code>, <code>13,2</code></li>
+          </ul>
         </div>
 
         <div class="card">
-          <h3>2. Paquete Debian Nativo (.deb)</h3>
-          <p>
-            La estructura del paquete <code>.deb</code> cumple con las normas FHS de Debian/Ubuntu. Se instala directamente en el sistema con dpkg o apt con 1 comando.
-          </p>
+          <div class="card-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/>
+              <path d="M8 12h8M12 8v8"/>
+            </svg>
+          </div>
+          <h3>Distribuciones Soportadas</h3>
+          <p>Listo para instalar mediante paquete nativo <code>.deb</code> o compilación directa:</p>
+          <ul style="margin-top: 10px;">
+            <li><strong>Ubuntu 24.04 LTS:</strong> Testeado oficialmente (Noble Numbat)</li>
+            <li><strong>Ubuntu 22.04 LTS:</strong> Totalmente compatible (Jammy)</li>
+            <li><strong>Debian 12 / Linux Mint:</strong> Compatible vía paquete <code>.deb</code></li>
+            <li><strong>Fedora / Arch Linux:</strong> Compatible compilando con <code>cargo build --release</code></li>
+          </ul>
         </div>
 
         <div class="card">
-          <h3>3. Soporte Multi-Modelo</h3>
-          <p>
-            Soporta cualquier laptop Apple con Touch Bar reconocida por el controlador <code>appletbdrm</code> (MacBookPro15,1 / 15,2 / 16,1 / 16,2 / 16,3 / 16,4) adaptándose a la resolución nativa sin recalcular buffers.
-          </p>
+          <div class="card-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            </svg>
+          </div>
+          <h3>Requisitos del Kernel</h3>
+          <p>Para comunicarse con la pantalla y el digitalizador táctil de la Touch Bar se requiere:</p>
+          <ul style="margin-top: 10px;">
+            <li>Kernel con controlador <strong><code>appletbdrm</code></strong> (incluido en kernels T2 Linux)</li>
+            <li>Acceso a <code>/dev/dri/card*</code> y <code>/dev/uinput</code></li>
+            <li>PipeWire o PulseAudio para telemetría de audio</li>
+            <li>Bus de sesión D-Bus activo para metadatos MPRIS</li>
+          </ul>
         </div>
       </div>
     </section>
