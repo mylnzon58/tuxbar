@@ -2,17 +2,33 @@
 
 use std::fs;
 
-#[derive(Debug, Clone, Copy, Default)]
+#[derive(Debug, Clone, Copy)]
 pub struct SystemStats {
     pub cpu_usage_pct: f32,
     pub mem_used_mb: u32,
     pub mem_total_mb: u32,
     pub temp_c: f32,
+    pub core_count: usize,
+    pub core_usage_pct: [f32; 16],
+}
+
+impl Default for SystemStats {
+    fn default() -> Self {
+        Self {
+            cpu_usage_pct: 0.0,
+            mem_used_mb: 0,
+            mem_total_mb: 0,
+            temp_c: 0.0,
+            core_count: 0,
+            core_usage_pct: [0.0; 16],
+        }
+    }
 }
 
 pub struct TelemetryProvider {
     last_idle: u64,
     last_total: u64,
+    last_core_ticks: [(u64, u64); 16],
     cached_stats: SystemStats,
 }
 
@@ -23,22 +39,48 @@ impl TelemetryProvider {
         Self {
             last_idle: idle,
             last_total: total,
+            last_core_ticks: [(0, 0); 16],
             cached_stats: SystemStats::default(),
         }
     }
 
     pub fn refresh(&mut self) -> &SystemStats {
-        // 1. Calculate CPU usage delta
-        let (idle, total) = Self::read_cpu_raw();
-        let total_delta = total.saturating_sub(self.last_total);
-        let idle_delta = idle.saturating_sub(self.last_idle);
-
-        if total_delta > 0 {
-            let busy_delta = total_delta.saturating_sub(idle_delta);
-            self.cached_stats.cpu_usage_pct = (busy_delta as f32 / total_delta as f32) * 100.0;
+        // 1. Calculate CPU aggregate and per-core deltas from /proc/stat
+        if let Ok(stat) = fs::read_to_string("/proc/stat") {
+            let mut detected_cores = 0;
+            for line in stat.lines() {
+                if line.starts_with("cpu ") {
+                    let (idle, total) = parse_cpu_line(line);
+                    let total_delta = total.saturating_sub(self.last_total);
+                    let idle_delta = idle.saturating_sub(self.last_idle);
+                    if total_delta > 0 {
+                        let busy_delta = total_delta.saturating_sub(idle_delta);
+                        self.cached_stats.cpu_usage_pct =
+                            (busy_delta as f32 / total_delta as f32) * 100.0;
+                    }
+                    self.last_idle = idle;
+                    self.last_total = total;
+                } else if line.starts_with("cpu") {
+                    let first_word = line.split_whitespace().next().unwrap_or("");
+                    if let Ok(core_id) = first_word[3..].parse::<usize>() {
+                        if core_id < 16 {
+                            let (idle, total) = parse_cpu_line(line);
+                            let (last_idle, last_total) = self.last_core_ticks[core_id];
+                            let total_delta = total.saturating_sub(last_total);
+                            let idle_delta = idle.saturating_sub(last_idle);
+                            if total_delta > 0 {
+                                let busy = total_delta.saturating_sub(idle_delta);
+                                self.cached_stats.core_usage_pct[core_id] =
+                                    (busy as f32 / total_delta as f32) * 100.0;
+                            }
+                            self.last_core_ticks[core_id] = (idle, total);
+                            detected_cores = detected_cores.max(core_id + 1);
+                        }
+                    }
+                }
+            }
+            self.cached_stats.core_count = detected_cores;
         }
-        self.last_idle = idle;
-        self.last_total = total;
 
         // 2. Read memory info
         if let Ok(meminfo) = fs::read_to_string("/proc/meminfo") {
@@ -67,26 +109,13 @@ impl TelemetryProvider {
     fn read_cpu_raw() -> (u64, u64) {
         if let Ok(stat) = fs::read_to_string("/proc/stat") {
             if let Some(cpu_line) = stat.lines().next() {
-                let parts: Vec<&str> = cpu_line.split_whitespace().skip(1).collect();
-                if parts.len() >= 4 {
-                    let user: u64 = parts[0].parse().unwrap_or(0);
-                    let nice: u64 = parts[1].parse().unwrap_or(0);
-                    let system: u64 = parts[2].parse().unwrap_or(0);
-                    let idle: u64 = parts[3].parse().unwrap_or(0);
-                    let iowait: u64 = parts.get(4).and_then(|s| s.parse().ok()).unwrap_or(0);
-                    let irq: u64 = parts.get(5).and_then(|s| s.parse().ok()).unwrap_or(0);
-                    let softirq: u64 = parts.get(6).and_then(|s| s.parse().ok()).unwrap_or(0);
-
-                    let total = user + nice + system + idle + iowait + irq + softirq;
-                    return (idle + iowait, total);
-                }
+                return parse_cpu_line(cpu_line);
             }
         }
         (0, 0)
     }
 
     fn read_cpu_temp() -> f32 {
-        // Try thermal_zone0 first (standard ACPI)
         for zone in 0..6 {
             let path = format!("/sys/class/thermal/thermal_zone{zone}/temp");
             if let Ok(content) = fs::read_to_string(&path) {
@@ -99,6 +128,24 @@ impl TelemetryProvider {
             }
         }
         0.0
+    }
+}
+
+fn parse_cpu_line(line: &str) -> (u64, u64) {
+    let parts: Vec<&str> = line.split_whitespace().skip(1).collect();
+    if parts.len() >= 4 {
+        let user: u64 = parts[0].parse().unwrap_or(0);
+        let nice: u64 = parts[1].parse().unwrap_or(0);
+        let system: u64 = parts[2].parse().unwrap_or(0);
+        let idle: u64 = parts[3].parse().unwrap_or(0);
+        let iowait: u64 = parts.get(4).and_then(|s| s.parse().ok()).unwrap_or(0);
+        let irq: u64 = parts.get(5).and_then(|s| s.parse().ok()).unwrap_or(0);
+        let softirq: u64 = parts.get(6).and_then(|s| s.parse().ok()).unwrap_or(0);
+
+        let total = user + nice + system + idle + iowait + irq + softirq;
+        (idle + iowait, total)
+    } else {
+        (0, 0)
     }
 }
 

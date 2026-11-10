@@ -73,3 +73,4 @@ impl Widget for SystemStatsWidget {
         WidgetAction::None
     }
 }
+

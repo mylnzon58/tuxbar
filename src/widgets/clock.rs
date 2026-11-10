@@ -35,3 +35,4 @@ impl Widget for ClockWidget {
         WidgetAction::ToggleMode
     }
 }
+

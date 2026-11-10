@@ -131,6 +131,44 @@ impl Framebuffer {
             x += metrics.advance_width.round() as i32;
         }
     }
+
+    pub fn draw_glow_circle(&mut self, cx: i32, cy: i32, radius: i32, color: Color) {
+        let r2 = radius * radius;
+        let x_start = (cx - radius).max(0);
+        let x_end = (cx + radius).min(self.width as i32);
+        let y_start = (cy - radius).max(0);
+        let y_end = (cy + radius).min(self.height as i32);
+
+        for y in y_start..y_end {
+            let dy = y - cy;
+            for x in x_start..x_end {
+                let dx = x - cx;
+                let dist2 = dx * dx + dy * dy;
+                if dist2 <= r2 {
+                    let factor = 1.0 - (dist2 as f32 / r2 as f32).sqrt();
+                    let alpha = ((color.a as f32) * factor).round() as u8;
+                    if alpha > 0 {
+                        self.set_pixel(x, y, Color::rgba(color.r, color.g, color.b, alpha));
+                    }
+                }
+            }
+        }
+    }
+
+    pub fn save_ppm<P: AsRef<std::path::Path>>(&self, path: P) -> std::io::Result<()> {
+        use std::io::Write;
+        let mut file = std::fs::File::create(path)?;
+        writeln!(file, "P6\n{} {}\n255", self.width, self.height)?;
+        let mut buffer = Vec::with_capacity((self.width * self.height * 3) as usize);
+        for &pixel in &self.pixels {
+            let r = ((pixel >> 16) & 0xFF) as u8;
+            let g = ((pixel >> 8) & 0xFF) as u8;
+            let b = (pixel & 0xFF) as u8;
+            buffer.extend_from_slice(&[r, g, b]);
+        }
+        file.write_all(&buffer)?;
+        Ok(())
+    }
 }
 
 #[cfg(test)]

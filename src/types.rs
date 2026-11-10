@@ -61,6 +61,46 @@ impl Color {
     pub const DARK_GRAY: Self = Self::rgb(30, 41, 59);
     pub const CARD_BG: Self = Self::rgb(15, 23, 42);
     pub const ACCENT: Self = Self::rgb(59, 130, 246);
+    pub const MAGENTA: Self = Self::rgb(217, 70, 239);
+    pub const PINK: Self = Self::rgb(244, 63, 94);
+    pub const ORANGE: Self = Self::rgb(249, 115, 22);
+    pub const PURPLE: Self = Self::rgb(147, 51, 234);
+    pub const NEON_CYAN: Self = Self::rgb(0, 240, 255);
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum BarMode {
+    #[default]
+    ProSplit,
+    Audiophile,
+    Cyberdeck,
+}
+
+impl BarMode {
+    #[must_use]
+    pub fn next(self) -> Self {
+        match self {
+            Self::ProSplit => Self::Audiophile,
+            Self::Audiophile => Self::Cyberdeck,
+            Self::Cyberdeck => Self::ProSplit,
+        }
+    }
+
+    #[must_use]
+    pub fn label(self) -> &'static str {
+        match self {
+            Self::ProSplit => "PRO SPLIT",
+            Self::Audiophile => "AUDIOPHILE",
+            Self::Cyberdeck => "CYBERDECK",
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct ActiveTouch {
+    pub x: i32,
+    pub y: i32,
+    pub intensity: f32,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

@@ -17,12 +17,23 @@
 
 Hasta hoy, usar Linux en una MacBook Pro con Touch Bar significaba conformarse con un teclado estático (`tiny-dfr`): botones fijos de volumen, brillo o teclas F1-F12 dibujadas en una pantalla OLED apagada e inerte.
 
-**TuxBar transforma la Touch Bar en un centro de widgets interactivo, dinámico y vivo en tiempo real:**
+**TuxBar transforma la Touch Bar en un centro de widgets interactivo, dinámico y vivo en tiempo real con 3 modos conmutables al tacto:**
 
-1. 🎵 **Reproductor en Vivo (MPRIS D-Bus):** Detecta automáticamente Spotify, YouTube, Chrome, Firefox o VLC. Muestra la insignia del reproductor, el nombre del tema y artista con desplazamiento fluido (*marquee*), controles táctiles (`◀◀`, `▶/❚❚`, `▶▶`) y barra de progreso de reproducción.
-2. ⚡ **Telemetría de Hardware en Tiempo Real:** Muestra el porcentaje de uso de CPU, la temperatura exacta del silicio en °C con alerta visual por color (verde <70°C, amarillo <85°C, rojo >85°C) y la memoria RAM utilizada, leyendo directamente de `/proc` y `sysfs` sin sobrecarga.
-3. 🕒 **Reloj Tipográfico de Alta Definición:** Muestra hora y fecha con tipografía nítida y renderizado vectorial anti-aliasing.
-4. 🔄 **Conmutación Instantánea (`tuxbar-toggle`):** Alterna en un instante entre el modo de widgets interactivos y el teclado tradicional sin reiniciar la laptop.
+![TuxBar Audiophile Mode](assets/tuxbar_audiophile_preview.png)
+*Modo Audiophile: Reproductor MPRIS con Ecualizador de Espectro de 32 bandas dinámico y picos flotantes.*
+
+![TuxBar Cyberdeck Mode](assets/tuxbar_cyberdeck_preview.png)
+*Modo Cyberdeck: Matriz de carga CPU hilo por hilo (12 núcleos), RAM, temperatura y pulso de kernel.*
+
+![TuxBar Pro Split Mode](assets/tuxbar_prosplit_preview.png)
+*Modo Pro Split: Vista balanceada con música, mini-espectro, telemetría y reloj tipográfico.*
+
+1. 🎵 **Modo Audiophile (Ecualizador de Frecuencias en Vivo):** Integra un ecualizador dinámico de 32 bandas con degradado tricolor neón (Cyan base -> Magenta medio -> Rosa picos) y retención de picos (*peak-hold*), reproductor MPRIS (Spotify, Chrome, Firefox, VLC) con desplazamiento *marquee* y controles táctiles directos (`◀◀`, `▶/❚❚`, `▶▶`).
+2. ⚡ **Modo Cyberdeck (Matriz de Silicio en Tiempo Real):** Muestra el nivel de carga individual de cada uno de los núcleos lógicos del procesador (hasta 16 hilos) mediante medidores verticales estilo LED, temperatura del silicio en °C, uso de RAM y monitor de latido del kernel.
+3. ⏱️ **Modo Pro Split (Productividad Equilibrada):** Combina el reproductor musical con medidor de espectro compacto, telemetría esencial de hardware y reloj tipográfico de alta definición.
+4. ✨ **Respuesta Táctil Visual (Luminous Touch Glow):** Al posar el dedo sobre la pantalla OLED, un halo de luz neón sigue las coordenadas exactas de la pulsación sobre el cristal.
+5. 🔄 **Selector de Modos al Tacto:** Botón interactivo `[ MODE ]` directo en la Touch Bar que conmuta en caliente entre los 3 modos.
+6. 🔀 **Conmutación Instantánea (`tuxbar-toggle`):** Alterna al instante entre TuxBar y el teclado tradicional (`tiny-dfr`) sin reiniciar la laptop.
 
 ---
 
@@ -94,3 +105,4 @@ Soy **Juan José Monzón** ([@mylnzon58](https://github.com/mylnzon58)), desarro
 👉 **[https://github.com/mylnzon58/tuxbar](https://github.com/mylnzon58/tuxbar)**
 
 ¡Muchas gracias por tu apoyo! / *Thank you for your support!*
+

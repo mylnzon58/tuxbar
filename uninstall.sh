@@ -25,3 +25,4 @@ echo "[+] Restaurando servicio predeterminado tiny-dfr..."
 systemctl start tiny-dfr.service 2>/dev/null || true
 
 echo "=== Desinstalación completada con éxito. Touch Bar restaurada a tiny-dfr ==="
+

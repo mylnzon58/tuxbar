@@ -85,3 +85,4 @@ echo -e " ⭐ Si este proyecto le dio vida e interactividad a la Touch Bar de tu
 echo -e " 👉 ${CYAN}https://github.com/mylnzon58/tuxbar${NC}"
 echo -e " ¡Muchas gracias por tu apoyo! / Thank you for your support!"
 echo -e "${CYAN}==========================================================================${NC}"
+
