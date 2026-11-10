@@ -6,107 +6,144 @@
 [![Rust](https://img.shields.io/badge/Rust-100%25_Pure_Safe-orange.svg?style=flat-square&logo=rust)](https://www.rust-lang.org/)
 [![DRM](https://img.shields.io/badge/DRM-KMS_Zero_C_Deps-emerald.svg?style=flat-square&logo=linux)](https://en.wikipedia.org/wiki/Direct_Rendering_Manager)
 [![Ubuntu 24.04](https://img.shields.io/badge/Ubuntu-24.04_LTS_Verified-E95420.svg?style=flat-square&logo=ubuntu)](https://ubuntu.com/)
+[![Web / Live Previews](https://img.shields.io/badge/Documentaci%C3%B3n-GitHub_Pages-77216F.svg?style=flat-square)](https://mylnzon58.github.io/tuxbar/)
 
 > **Autor:** [Juan José Monzón (@mylnzon58)](https://github.com/mylnzon58)  
-> **Hardware:** Apple MacBook Pro 16,1 (A2141) / Serie Apple T2 / Dispositivos con Touch Bar DRM  
-> **Tecnología:** Rust 2021 · DRM KMS Dumb Buffers · D-Bus MPRIS · Telemetría `/proc` · Fontdue Typography
+> **Hardware:** Apple MacBook Pro 16,1 (A2141) / Serie Apple T2 / Laptops con Touch Bar DRM (`appletbdrm`)  
+> **Tecnología:** Rust 2021 · DRM KMS Dumb Buffers · D-Bus MPRIS · PipeWire PCM Telemetry · Evdev Multi-Touch · Virtual `/dev/uinput`  
+> **Sitio Web Oficial & Capturas:** [https://mylnzon58.github.io/tuxbar/](https://mylnzon58.github.io/tuxbar/)
 
 ---
 
 ## 🇪🇸 Descripción en Español
 
-Hasta hoy, usar Linux en una MacBook Pro con Touch Bar significaba conformarse con un teclado estático (`tiny-dfr`): botones fijos de volumen, brillo o teclas F1-F12 dibujadas en una pantalla OLED apagada e inerte.
+Hasta hoy, utilizar Linux en una MacBook Pro con Touch Bar significaba conformarse con una hilera estática (`tiny-dfr`): botones fijos de volumen y brillo o teclas F1-F12 dibujadas en una pantalla OLED inerte y desaprovechada.
 
-**TuxBar transforma la Touch Bar en un centro de widgets interactivo, dinámico y vivo en tiempo real con 3 modos conmutables al tacto:**
+**TuxBar transforma la Touch Bar en un centro de widgets interactivo, dinámico y en tiempo real con 5 modos diseñados a 60 píxeles de altura:**
 
-![TuxBar Audiophile Mode](assets/tuxbar_audiophile_preview.png)
-*Modo Audiophile: Reproductor MPRIS con Ecualizador de Espectro de 32 bandas dinámico y picos flotantes.*
+### ⚡ 1. Modo Pro Split (Equilibrio y Productividad)
+![TuxBar Pro Split Mode](assets/tuxbar_preview_prosplit.png)
+*Vista balanceada: reproductor musical MPRIS con título y artista, mini-espectro dinámico, matriz de telemetría de silicio y reloj tipográfico de alta definición.*
 
-![TuxBar Cyberdeck Mode](assets/tuxbar_cyberdeck_preview.png)
-*Modo Cyberdeck: Matriz de carga CPU hilo por hilo (12 núcleos), RAM, temperatura y pulso de kernel.*
+### 🎵 2. Modo Audiophile (Ecualizador Reactivo en Vivo con Decibeles Reales)
+![TuxBar Audiophile Mode](assets/tuxbar_preview_audiophile.png)
+*Ecualizador de 32 bandas impulsado por audio PCM real de PipeWire (`@DEFAULT_AUDIO_SINK@`). Muestra insignia de decibeles reales (`dBFS`), retención de picos (*peak-hold*) y flatline instantáneo en pausa o silencio. Cero sonido emitido a los altavoces.*
 
-![TuxBar Gallery Photo Scrubber Mode](assets/tuxbar_gallery_preview.png)
-*Modo Gallery: Visor y Scrubber de imágenes y capturas táctil (como en macOS Photos).*
+### 📷 3. Modo Gallery (Photo Scrubber de Capturas e Imágenes)
+![TuxBar Gallery Photo Scrubber Mode](assets/tuxbar_preview_gallery.png)
+*Replica la función icónica de macOS Photos en Linux. Escanea capturas reales en `~/Pictures/Capturas de pantalla`, renderiza miniaturas de 84×54 px con bordes redondeados y permite deslizar con inercia táctil. Al presionar `[ ABRIR ]`, la imagen se lanza inmediatamente en el visor del escritorio GNOME.*
 
-![TuxBar Pro Split Mode](assets/tuxbar_prosplit_preview.png)
-*Modo Pro Split: Vista balanceada con música, mini-espectro, telemetría y reloj tipográfico.*
+### 💻 4. Modo Cyberdeck (Matriz de Silicio Núcleo por Núcleo)
+![TuxBar Cyberdeck Mode](assets/tuxbar_preview_cyberdeck.png)
+*Matriz de telemetría individual hilo por hilo (hasta 16 hilos de CPU), temperatura del procesador en tiempo real en °C, uso de memoria RAM y monitor de actividad del kernel.*
 
-1. 📷 **Modo Gallery (Photo Scrubber de Imágenes & Capturas):** Replica la función icónica de macOS Photos en Linux. Renderiza una tira de película (*filmstrip*) horizontal de fotos y capturas reales con bordes redondeados; permite deslizar el dedo sobre la Touch Bar para explorar miniaturas a 30 FPS y tocar `[ OPEN ]` para ver la imagen a resolución completa en el monitor principal.
-2. 🎵 **Modo Audiophile (Ecualizador de Frecuencias en Vivo):** Integra un ecualizador dinámico de 32 bandas con degradado tricolor neón (Cyan base -> Magenta medio -> Rosa picos) y retención de picos (*peak-hold*), reproductor MPRIS (Spotify, Chrome, Firefox, VLC) con desplazamiento *marquee* y controles táctiles directos (`◀◀`, `▶/❚❚`, `▶▶`).
-3. ⚡ **Modo Cyberdeck (Matriz de Silicio en Tiempo Real):** Muestra el nivel de carga individual de cada uno de los núcleos lógicos del procesador (hasta 16 hilos) mediante medidores verticales estilo LED, temperatura del silicio en °C, uso de RAM y monitor de latido del kernel.
-4. ⏱️ **Modo Pro Split (Productividad Equilibrada):** Combina el reproductor musical con medidor de espectro compacto, telemetría esencial de hardware y reloj tipográfico de alta definición.
-5. ✨ **Respuesta Táctil Visual (Luminous Touch Glow):** Al posar el dedo sobre la pantalla OLED, un halo de luz neón sigue las coordenadas exactas de la pulsación sobre el cristal.
-6. 🔄 **Selector de Modos al Tacto:** Botón interactivo `[ MODE ]` directo en la Touch Bar que conmuta en caliente entre los 4 modos.
-7. 🔀 **Conmutación Instantánea (`tuxbar-toggle`):** Alterna al instante entre TuxBar y el teclado tradicional (`tiny-dfr`) sin reiniciar la laptop.
-
----
-
-## 🏛️ Arquitectura de Software y Principios de Ingeniería
-
-TuxBar fue diseñado desde cero siguiendo estrictos estándares de ingeniería de software para garantizar **máximo rendimiento, legibilidad y seguridad absoluta del hardware**:
-
-* **Principios SOLID:**
-  * **S (Single Responsibility):** Módulos desacoplados; `drm.rs` gestiona buffers KMS, `input.rs` captura coordenadas táctiles, `mpris.rs` comunica con D-Bus y `telemetry.rs` lee `/proc`.
-  * **O (Open/Closed):** Sistema extensible de widgets mediante el trait `Widget`. Se pueden agregar nuevos componentes visuales sin modificar el ciclo de renderizado central.
-  * **L (Liskov Substitution):** Cualquier widget que implemente `Widget` encaja de manera transparente en la cuadrícula de diseño.
-  * **I (Interface Segregation):** Separación limpia entre la lógica de dibujado (`render`) y la gestión de pulsaciones (`handle_touch`).
-  * **D (Dependency Inversion):** El orquestador de diseño depende de la abstracción `Widget`, no de implementaciones concretas.
-* **Cero Dependencias C (Pure Rust):**
-  A diferencia de proyectos tradicionales que dependen de complejas librerías C externas (Cairo, FreeType C, librsvg C), TuxBar compila directamente contra el subsistema del kernel de Linux utilizando crates puros de Rust (`drm`, `evdev`, `fontdue`, `zbus`). Esto elimina problemas de compatibilidad de librerías dinámicas y fugas de memoria.
-* **Seguridad de Hardware y OWASP:**
-  * **Protección del Panel OLED:** La comunicación con la pantalla se realiza exclusivamente a través de la API estándar de dumb buffers del kernel de Linux (`DRM_IOCTL_MODE_CREATE_DUMB`). El controlador del kernel (`appletbdrm`) garantiza que los voltajes y frecuencias de refresco se mantengan siempre dentro de las especificaciones seguras de fábrica.
-  * **Sin Inyección de Comandos:** No se ejecutan comandos de shell (`sh -c`). Toda la comunicación con reproductores y el sistema se realiza mediante llamadas directas a APIs del kernel y D-Bus tipado.
-  * **Límites de Memoria Estrictos:** Verificación continua de límites en cada píxel del buffer de 2008x60 para evitar desbordamientos de búfer.
+### ⌨️ 5. Modo F1-F12 Keys (Auto-conmutación por Hardware con Tecla Fn Física)
+![TuxBar Fn Keys Mode](assets/tuxbar_preview_fnkeys.png)
+*13 teclas estándar completas de 58 px de altura con tipografía vectorial de alta definición. El listener de hardware monitorea el teclado interno de Apple: **al mantener pulsada la tecla física `Fn`, la barra cambia a las teclas de función F1-F12 en 0 ms y regresa a tus widgets al soltarla**.*
 
 ---
 
-## 🚀 Instalación Rápida (1 Paso)
+## 🚀 Instalación Rápida (Sin Reiniciar)
 
+TuxBar ha sido empaquetado para instalarse y activarse de inmediato en la Touch Bar **sin necesidad de reiniciar tu laptop**:
+
+### Opción 1: Un solo comando en Terminal (Recomendado)
 ```bash
-# Clonar el repositorio
+curl -sSL https://raw.githubusercontent.com/mylnzon58/tuxbar/main/install.sh | sudo bash
+```
+
+### Opción 2: Paquete Debian Nativo (`.deb`)
+Descarga el paquete precompilado e instálalo con `dpkg` o `apt`:
+```bash
+# Descargar el paquete v0.2.0
+wget https://github.com/mylnzon58/tuxbar/releases/download/v0.2.0/tuxbar_0.2.0_amd64.deb
+
+# Instalar y activar de inmediato
+sudo dpkg -i tuxbar_0.2.0_amd64.deb
+```
+
+### Opción 3: Compilación desde el Código Fuente
+```bash
 git clone https://github.com/mylnzon58/tuxbar.git
 cd tuxbar
-
-# Instalar y compilar con 1 comando
+cargo build --release
 sudo ./install.sh
 ```
 
-El script de instalación compilará el binario optimizado, instalará el servicio `tuxbar.service` y configurará el comando de conmutación `tuxbar-toggle`.
+---
+
+## 🔀 Conmutación en Caliente (`tuxbar-toggle`)
+
+¿Necesitas volver temporalmente a las teclas estáticas de `tiny-dfr` para una sesión de trabajo específica? TuxBar incluye un conmutador sin fricción:
+
+```bash
+sudo tuxbar-toggle
+```
+*Alterna de forma segura entre **TuxBar (Widgets)** y **tiny-dfr (Teclado Tradicional)** en 0.2 segundos sin reiniciar ni apagar el equipo.*
 
 ---
 
-## 🎮 Comandos y Uso
+## 🎮 Comandos de Control CLI
 
 | Comando | Acción |
 | :--- | :--- |
 | **`sudo tuxbar-toggle`** | Alterna al instante entre **TuxBar (Widgets)** y **tiny-dfr (Teclado F1-F12)** |
-| **`tuxbar status`** | Muestra en terminal la pista musical actual y la telemetría del sistema |
-| **`tuxbar play-pause`** | Envía comando de reproducir/pausar al reproductor activo |
-| **`tuxbar next`** | Salta a la siguiente canción |
-| **`tuxbar previous`** | Vuelve a la canción anterior |
+| **`tuxbar status`** | Muestra en terminal la pista activa (MPRIS), decibeles y espectro de audio (PipeWire), uso de CPU por núcleo y RAM |
+| **`tuxbar play-pause`** | Envía comando Play/Pause por D-Bus al reproductor activo en el escritorio |
+| **`tuxbar next`** | Salta a la siguiente canción en Spotify, Chrome o VLC |
+| **`tuxbar previous`** | Regresa a la canción anterior |
 | **`tuxbar test`** | Verifica el motor gráfico y la tipografía en memoria sin capturar la pantalla |
 
 ---
 
-## 🇬🇧 English Description
+## 🏛️ Arquitectura Técnica y Estándares de Ingeniería
 
-Until today, using Linux on a MacBook Pro with a Touch Bar meant settling for a static keyboard experience (`tiny-dfr`): fixed volume and brightness buttons or F1-F12 keys rendered on an otherwise dormant OLED screen.
+TuxBar fue diseñado bajo estrictos estándares de ingeniería de software para garantizar **máximo rendimiento, legibilidad y seguridad absoluta del hardware**:
 
-**TuxBar turns the Touch Bar into an interactive, real-time dynamic widget engine:**
-
-* 🎵 **Live MPRIS Media Display:** Automatically binds to Spotify, YouTube, Chrome, Firefox, or VLC. Shows player pill, track title and artist with smooth marquee scrolling, touch playback controls (`Prev`, `Play/Pause`, `Next`), and progress bar.
-* ⚡ **Real-Time Hardware Telemetry:** Displays CPU usage %, live temperature in °C with color status (green <70°C, yellow <85°C, red >85°C), and RAM utilization directly from `/proc` with zero CPU overhead.
-* 🕒 **High-DPI Typography Clock:** Crisp time and date rendered using a pure-Rust vector rasterizer.
-* 🔄 **Instant Toggle (`tuxbar-toggle`):** Hot-switch between dynamic widgets and the classic function keyboard without rebooting.
+* **Cero Dependencias C (Pure Rust):**
+  A diferencia de proyectos tradicionales que dependen de complejas librerías C externas (Cairo, FreeType C, librsvg C), TuxBar compila directamente contra el subsistema del kernel de Linux utilizando crates puros de Rust (`drm`, `evdev`, `fontdue`, `zbus`). Esto elimina incompatibilidades de bibliotecas dinámicas y fugas de memoria.
+* **Seguridad de Hardware y Protección del Panel OLED:**
+  La comunicación con la pantalla se realiza exclusivamente mediante la API estándar de dumb buffers del kernel (`DRM_IOCTL_MODE_CREATE_DUMB`) en `/dev/dri/card*` administrado por `appletbdrm`. Los voltajes y frecuencias de refresco se mantienen siempre dentro de los parámetros seguros de fábrica.
+* **Audio Telemetry Pasivo (PipeWire PCM):**
+  `AudioCaptureService` monitorea pasivamente el flujo de audio de salida a 8000 Hz / 16-bit mono desde `@DEFAULT_AUDIO_SINK@`. No emite ni reproduce sonidos a los altavoces, evitando ruidos o sobrecargas en los amplificadores del MacBook Pro.
+* **Teclado Virtual de Hardware (`/dev/uinput`):**
+  Al presionar las teclas táctiles `Esc` o `F1` a `F12`, TuxBar emite eventos de hardware genuinos (`evdev::Key`) al kernel, garantizando compatibilidad con atajos de teclado, terminales, editores y entornos gráficos.
 
 ---
 
-## 💙 Mensaje del autor / Author's note
+## 🍏 Integración con el Ecosistema T2 Linux
 
-Soy **Juan José Monzón** ([@mylnzon58](https://github.com/mylnzon58)), desarrollador argentino y padre de una niña y un niño pequeño. Intento vivir de lo que amo (el desarrollo de software y tecnología), y quise crear esta solución de forma abierta para dotar a la Touch Bar de widgets vivos en Linux.
+TuxBar ha sido diseñado pensando en la comunidad de usuarios y mantenedores de Ubuntu en laptops Apple T2 ([t2linux](https://t2linux.org/) / [AdityaGarg8](https://github.com/AdityaGarg8/t2-ubuntu-repo)):
 
-⭐ **Si este proyecto le dio vida e interactividad a la Touch Bar de tu Mac, déjame una estrella en GitHub:**  
+1. **Coexistencia Pacífica:** La unidad de servicio `tuxbar.service` declara `Conflicts=tiny-dfr.service`. Nunca habrá dos procesos intentando adquirir el dumb buffer DRM simultáneamente.
+2. **Empaquetado Estándar:** El paquete `.deb` generado con `package_deb.sh` sigue la jerarquía Filesystem Hierarchy Standard (FHS) de Debian/Ubuntu y puede ser añadido directamente a los repositorios APT de T2 Linux (`t2-ubuntu-repo`).
+3. **Soporte de Modelos:** Compatible con cualquier laptop Apple con Touch Bar reconocida por el kernel: MacBookPro15,1 / 15,2 / 16,1 / 16,2 / 16,3 / 16,4.
+
+---
+
+## 🤖 Declaración de Transparencia: Desarrollo con Inteligencia Artificial
+
+> [!NOTE]
+> **Aviso de transparencia tecnológica:**  
+> Este proyecto ha sido programado y optimizado utilizando herramientas avanzadas de Inteligencia Artificial (no apto para puristas de la programación artesanal). Sin embargo, cada línea de código, cada ioctl de DRM KMS y cada cálculo de frecuencia de PipeWire ha sido sometido a un **riguroso proceso de ingeniería humana y pruebas directas en hardware físico Apple MacBook Pro 16,1 (A2141) bajo Ubuntu 24.04 LTS Kernel 7.3.0-4-t2-noble**.
+>
+> El código es 100% libre y abierto (GPL-3.0). Si encuentras margen de mejora, casos extremos o deseas proponer nuevos widgets, seré el primero en recibir tus aportes, issues y Pull Requests con total amabilidad y apertura. Creemos en el software libre que resuelve problemas concretos y aporta a la comunidad Linux.
+
+---
+
+## 💙 Mensaje del Autor / Author's Note
+
+Soy **Juan José Monzón** ([@mylnzon58](https://github.com/mylnzon58)), desarrollador de software argentino y padre de una niña y un niño pequeño 🇦🇷👨‍👧‍👦. Intento vivir de lo que amo: el desarrollo de productos digitales, la tecnología y el software que aporta soluciones reales.
+
+Quise crear esta solución de forma abierta para que cualquier persona que instale Linux en su MacBook pueda disfrutar de una Touch Bar viva, útil y moderna.
+
+⭐ **Si este proyecto le devolvió la utilidad a la Touch Bar de tu Mac, apóyame con una estrella en GitHub:**  
 👉 **[https://github.com/mylnzon58/tuxbar](https://github.com/mylnzon58/tuxbar)**
 
-¡Muchas gracias por tu apoyo! / *Thank you for your support!*
+☕ **Si deseas apoyar mi trabajo y a mi familia para seguir manteniendo proyectos de código libre:**  
+👉 **[Donar un Tecito en tecito.app/juanjoclassic](https://tecito.app/juanjoclassic)**
 
+* ¡Conectemos en [LinkedIn](https://www.linkedin.com/in/juan-m-97b85681/)
+* Sígueme en [Instagram (@juanjoclassic)](https://www.instagram.com/juanjoclassic/)
+
+¡Muchas gracias por tu apoyo! / *Thank you for your support!*

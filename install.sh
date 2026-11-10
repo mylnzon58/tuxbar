@@ -29,6 +29,20 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # 1. Verificar o compilar binario optimizado
 echo -e "\n${CYAN}[1/4] Verificando binario TuxBar compilado en Rust...${NC}"
 if [ ! -f "$SCRIPT_DIR/target/release/tuxbar" ]; then
+    # Si se ejecuta mediante curl/pipe o no existe el binario local, intentar descargar release oficial
+    if command -v curl >/dev/null 2>&1; then
+        echo -e "${YELLOW}[i] Descargando paquete oficial precompilado v0.2.0 desde GitHub...${NC}"
+        TMP_DIR=$(mktemp -d)
+        if curl -sSL "https://github.com/mylnzon58/tuxbar/releases/download/v0.2.0/tuxbar_0.2.0_amd64.deb" -o "$TMP_DIR/tuxbar.deb" 2>/dev/null && [ -s "$TMP_DIR/tuxbar.deb" ]; then
+            dpkg -i "$TMP_DIR/tuxbar.deb"
+            rm -rf "$TMP_DIR"
+            echo -e "${GREEN}[✓] TuxBar instalado y activado exitosamente mediante paquete oficial Debian.${NC}"
+            exit 0
+        fi
+        rm -rf "$TMP_DIR"
+    fi
+
+    # Fallback: compilar con cargo si está disponible
     CARGO_BIN="$(command -v cargo 2>/dev/null || true)"
     if [ -z "$CARGO_BIN" ] && [ -n "$SUDO_USER" ]; then
         USER_HOME=$(getent passwd "$SUDO_USER" | cut -d: -f6)
