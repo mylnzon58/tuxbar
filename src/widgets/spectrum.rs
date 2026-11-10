@@ -1,5 +1,6 @@
 //! Audiophile Dynamic Spectrum Analyzer Widget
 //! Displays a multi-band dancing frequency equalizer with neon gradient and peak hold.
+//! When audio is paused or stopped, it remains completely silent and flat (no ghost movements).
 
 use crate::graphics::{FontEngine, Framebuffer};
 use crate::types::{Color, Rect, TouchEvent, WidgetAction};
@@ -21,7 +22,7 @@ impl SpectrumVisualizerWidget {
             levels: [0.0; BANDS_COUNT],
             peaks: [0.0; BANDS_COUNT],
             tick: 0.0,
-            is_active: true,
+            is_active: false, // Inactive by default: flatline until music is actually playing
         }
     }
 
@@ -30,10 +31,10 @@ impl SpectrumVisualizerWidget {
     }
 
     pub fn update_frame(&mut self) {
-        self.tick += 0.15;
+        if self.is_active {
+            self.tick += 0.15;
 
-        for i in 0..BANDS_COUNT {
-            if self.is_active {
+            for i in 0..BANDS_COUNT {
                 // Synthesize rich harmonic wave dynamics (simulating live audio frequency response)
                 let freq = (i as f32 + 1.0) * 0.45;
                 let wave1 = (self.tick * 2.2 + freq).sin();
@@ -47,16 +48,25 @@ impl SpectrumVisualizerWidget {
 
                 // Smooth dampening towards target
                 self.levels[i] += (target - self.levels[i]) * 0.4;
-            } else {
-                // When audio is stopped, decay smoothly to zero (no fake movement)
-                self.levels[i] = (self.levels[i] * 0.7).max(0.0);
-            }
 
-            // Update peak-hold indicators
-            if self.levels[i] > self.peaks[i] {
-                self.peaks[i] = self.levels[i];
-            } else {
-                self.peaks[i] = (self.peaks[i] - 0.02).max(0.0);
+                // Update peak-hold indicators
+                if self.levels[i] > self.peaks[i] {
+                    self.peaks[i] = self.levels[i];
+                } else {
+                    self.peaks[i] = (self.peaks[i] - 0.02).max(0.0);
+                }
+            }
+        } else {
+            // When audio is stopped or paused, decay instantly to flat zero (zero fake movement)
+            for i in 0..BANDS_COUNT {
+                self.levels[i] = (self.levels[i] * 0.5).max(0.0);
+                if self.levels[i] < 0.01 {
+                    self.levels[i] = 0.0;
+                }
+                self.peaks[i] = (self.peaks[i] * 0.5).max(0.0);
+                if self.peaks[i] < 0.01 {
+                    self.peaks[i] = 0.0;
+                }
             }
         }
     }
@@ -68,7 +78,7 @@ impl Widget for SpectrumVisualizerWidget {
         fb.draw_rounded_rect(area, 6, Color::CARD_BG);
 
         let padding_x = 8;
-        let padding_y = 6;
+        let padding_y = 4;
         let inner_w = area.width.saturating_sub(padding_x * 2);
         let inner_h = area.height.saturating_sub(padding_y * 2);
 
@@ -106,10 +116,12 @@ impl Widget for SpectrumVisualizerWidget {
             }
 
             // Draw floating peak indicator dot
-            let peak_seg = (peak * (segments - 1) as f32).round() as u32;
-            let peak_y = area.y + area.height as i32 - padding_y as i32 - ((peak_seg + 1) * (seg_height + seg_gap)) as i32;
-            let peak_rect = Rect::new(bar_x, peak_y, bar_width, 2);
-            fb.fill_rect(peak_rect, Color::WHITE);
+            if peak > 0.05 {
+                let peak_seg = (peak * (segments - 1) as f32).round() as u32;
+                let peak_y = area.y + area.height as i32 - padding_y as i32 - ((peak_seg + 1) * (seg_height + seg_gap)) as i32;
+                let peak_rect = Rect::new(bar_x, peak_y, bar_width, 2);
+                fb.fill_rect(peak_rect, Color::WHITE);
+            }
         }
     }
 
@@ -117,4 +129,3 @@ impl Widget for SpectrumVisualizerWidget {
         WidgetAction::PlayPause
     }
 }
-

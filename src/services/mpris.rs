@@ -24,7 +24,17 @@ pub struct MprisClient {
 impl MprisClient {
     #[must_use]
     pub fn new() -> Self {
-        let conn = Connection::session().ok();
+        let conn = Connection::session().ok().or_else(|| {
+            let bus_path = std::env::var("DBUS_SESSION_BUS_ADDRESS").ok().or_else(|| {
+                if std::path::Path::new("/run/user/1000/bus").exists() {
+                    Some("unix:path=/run/user/1000/bus".to_string())
+                } else {
+                    None
+                }
+            })?;
+            zbus::blocking::connection::Builder::address(bus_path.as_str()).ok()?.build().ok()
+        });
+
         Self {
             conn,
             cached_info: TrackInfo::default(),
@@ -33,6 +43,16 @@ impl MprisClient {
     }
 
     pub fn update(&mut self) -> &TrackInfo {
+        if self.conn.is_none() {
+            let fresh = Self::new();
+            if fresh.conn.is_some() {
+                self.conn = fresh.conn;
+            } else {
+                self.cached_info = TrackInfo::default();
+                return &self.cached_info;
+            }
+        }
+
         let Some(conn) = &self.conn else {
             return &self.cached_info;
         };

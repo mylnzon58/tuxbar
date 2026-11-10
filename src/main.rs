@@ -32,7 +32,7 @@ use crate::widgets::Widget;
 #[derive(Parser)]
 #[command(name = "tuxbar")]
 #[command(author = "Juan José Monzón (@mylnzon58)")]
-#[command(version = "0.1.0")]
+#[command(version = "0.2.0")]
 #[command(about = "The Pure & Dynamic Touch Bar Engine for Linux", long_about = None)]
 struct Cli {
     #[command(subcommand)]
