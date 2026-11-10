@@ -33,13 +33,13 @@ fi
 if systemctl is-active --quiet tuxbar.service; then
     echo "[-] Desactivando TuxBar (Widgets Dinámicos)..."
     systemctl stop tuxbar.service
-    echo "[+] Restaurando tiny-dfr (Teclado F1-F12 estático)..."
+    echo "[+] Restaurando tiny-dfr (Modo tradicional)..."
     systemctl start tiny-dfr.service
-    echo "✓ Touch Bar restaurada a modo tradicional (tiny-dfr)."
+    echo "✓ Touch Bar restaurada a tiny-dfr."
 else
     echo "[-] Deteniendo tiny-dfr temporalmente..."
     systemctl stop tiny-dfr.service
-    echo "[+] Activando TuxBar (Música en vivo, Galería y Widgets)..."
+    echo "[+] Activando TuxBar (Música, Telemetría, Teclas F1-F12 y Galería)..."
     systemctl start tuxbar.service
     echo "✓ TuxBar activo en la Touch Bar."
 fi
@@ -58,9 +58,10 @@ Priority: optional
 Architecture: amd64
 Maintainer: Juan José Monzón <mylnzon58@gmail.com>
 Description: Pure-Rust dynamic Touch Bar engine for Apple T2 MacBooks on Linux
- TuxBar transforms the Apple Touch Bar into a live dynamic widget center:
- 32-band Audiophile spectrum equalizer, 12-core CPU matrix & hardware telemetry,
- touch photo scrubber gallery, high-DPI typographic clock, and luminous touch glow.
+ TuxBar transforms the Apple Touch Bar into an interactive widget engine:
+ 32-band Audiophile equalizer, 12-core CPU telemetry matrix, full-height
+ F1-F12 keys with hardware Fn integration, photo filmstrip scrubber,
+ and high-DPI typographic clock.
 Homepage: https://github.com/mylnzon58/tuxbar
 EOF
 
@@ -71,9 +72,10 @@ set -e
 systemctl daemon-reload
 echo "[TuxBar] Activando TuxBar en la Touch Bar de forma inmediata..."
 systemctl stop tiny-dfr.service 2>/dev/null || true
-systemctl enable --now tuxbar.service 2>/dev/null || true
+systemctl enable tuxbar.service 2>/dev/null || true
+systemctl restart tuxbar.service 2>/dev/null || true
 echo "[TuxBar] ¡TuxBar ha sido instalado y activado en tu Touch Bar!"
-echo "[TuxBar] Usa 'sudo tuxbar-toggle' cuando quieras alternar entre widgets y teclas F1-F12."
+echo "[TuxBar] Usa 'sudo tuxbar-toggle' cuando quieras alternar entre widgets y tiny-dfr."
 exit 0
 EOF
 chmod 755 "$PKG_DIR/DEBIAN/postinst"
@@ -96,4 +98,3 @@ rm -rf "$PKG_DIR"
 echo "=== [4/4] Paquete .deb generado con éxito ==="
 ls -lh "$DEB_FILE"
 echo "Para instalar: sudo apt install ./dist/tuxbar_0.1.0_amd64.deb (o doble clic)"
-

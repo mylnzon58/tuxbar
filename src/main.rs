@@ -16,12 +16,13 @@ use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
 
-use crate::core::{DrmBackend, TouchListener};
+use crate::core::{DrmBackend, KeyboardListener, TouchListener, VirtualKeyboard};
 use crate::graphics::{FontEngine, Framebuffer};
 use crate::services::{MprisClient, TelemetryProvider};
 use crate::types::{ActiveTouch, BarMode, Color, Rect, TouchPhase, WidgetAction};
 use crate::widgets::clock::ClockWidget;
 use crate::widgets::cyberdeck::CyberdeckWidget;
+use crate::widgets::fn_keys::FnKeysWidget;
 use crate::widgets::gallery::GalleryWidget;
 use crate::widgets::now_playing::NowPlayingWidget;
 use crate::widgets::spectrum::SpectrumVisualizerWidget;
@@ -133,23 +134,21 @@ fn run_status() -> Result<()> {
 }
 
 fn run_preview(prefix: &str) -> Result<()> {
-    println!("[TuxBar] Generating high-resolution preview frames for all 3 modes...");
+    println!("[TuxBar] Generating high-resolution previews...");
     let font = FontEngine::new().map_err(|e| anyhow::anyhow!(e))?;
     let mut fb = Framebuffer::new();
 
     let mut telemetry = TelemetryProvider::new();
     let stats = telemetry.refresh();
 
-    let mut mpris = MprisClient::new();
-    let mut track = mpris.update().clone();
-    if track.title.is_empty() {
-        track.player_name = "Spotify".to_string();
-        track.title = "Around the World (Remastered)".to_string();
-        track.artist = "Daft Punk".to_string();
-        track.is_playing = true;
-        track.length_secs = 238.0;
-        track.position_secs = 84.0;
-    }
+    let track = crate::services::mpris::TrackInfo {
+        title: "Get Lucky".to_string(),
+        artist: "Daft Punk".to_string(),
+        player_name: "Spotify".to_string(),
+        is_playing: true,
+        length_secs: 238.0,
+        position_secs: 84.0,
+    };
 
     let mut now_playing = NowPlayingWidget::new();
     now_playing.update_info(track);
@@ -163,58 +162,60 @@ fn run_preview(prefix: &str) -> Result<()> {
     let mut cyberdeck = CyberdeckWidget::new();
     cyberdeck.update_stats(*stats);
 
+    let fn_keys = FnKeysWidget::new();
     let clock_widget = ClockWidget;
-    let mode_btn_rect = Rect::new(1610, 8, 136, 44);
-    let clock_rect = Rect::new(1756, 2, 248, 56);
+    let mode_btn_rect = Rect::new(1620, 1, 182, 58);
+    let clock_rect = Rect::new(1806, 1, 198, 58);
 
     // 1. Preview Audiophile
     fb.clear(Color::BLACK);
-    let media_rect = Rect::new(4, 2, 720, 56);
-    let spec_rect = Rect::new(730, 2, 870, 56);
+    let media_rect = Rect::new(2, 1, 778, 58);
+    let spec_rect = Rect::new(784, 1, 830, 58);
     now_playing.render(&mut fb, media_rect, &font);
     spectrum.render(&mut fb, spec_rect, &font);
     render_mode_button(&mut fb, mode_btn_rect, BarMode::Audiophile, &font);
     clock_widget.render(&mut fb, clock_rect, &font);
-    let path_audio = format!("{prefix}_audiophile.ppm");
-    fb.save_ppm(&path_audio)?;
-    println!("[TuxBar] Saved {}", path_audio);
+    fb.save_ppm(format!("{prefix}_audiophile.ppm"))?;
 
     // 2. Preview Cyberdeck
     fb.clear(Color::BLACK);
-    let cyber_rect = Rect::new(4, 2, 1596, 56);
+    let cyber_rect = Rect::new(2, 1, 1612, 58);
     cyberdeck.render(&mut fb, cyber_rect, &font);
     render_mode_button(&mut fb, mode_btn_rect, BarMode::Cyberdeck, &font);
     clock_widget.render(&mut fb, clock_rect, &font);
-    let path_cyber = format!("{prefix}_cyberdeck.ppm");
-    fb.save_ppm(&path_cyber)?;
-    println!("[TuxBar] Saved {}", path_cyber);
+    fb.save_ppm(format!("{prefix}_cyberdeck.ppm"))?;
 
-    // 3. Preview Pro Split
+    // 3. Preview Fn Keys
     fb.clear(Color::BLACK);
-    let pro_media = Rect::new(4, 2, 840, 56);
-    let pro_spec = Rect::new(850, 2, 380, 56);
+    let fn_rect = Rect::new(2, 1, 1778, 58);
+    let fn_mode_rect = Rect::new(1786, 1, 220, 58);
+    fn_keys.render(&mut fb, fn_rect, &font);
+    render_mode_button(&mut fb, fn_mode_rect, BarMode::FnKeys, &font);
+    fb.save_ppm(format!("{prefix}_fnkeys.ppm"))?;
+
+    // 4. Preview Pro Widgets
+    fb.clear(Color::BLACK);
+    let pro_media = Rect::new(2, 1, 920, 58);
+    let pro_spec = Rect::new(926, 1, 350, 58);
     let mut stats_widget = SystemStatsWidget::new();
     stats_widget.update_stats(*stats);
-    let pro_stats = Rect::new(1240, 2, 360, 56);
+    let pro_stats = Rect::new(1282, 1, 332, 58);
+
     now_playing.render(&mut fb, pro_media, &font);
     spectrum.render(&mut fb, pro_spec, &font);
     stats_widget.render(&mut fb, pro_stats, &font);
     render_mode_button(&mut fb, mode_btn_rect, BarMode::ProSplit, &font);
     clock_widget.render(&mut fb, clock_rect, &font);
-    let path_pro = format!("{prefix}_prosplit.ppm");
-    fb.save_ppm(&path_pro)?;
-    println!("[TuxBar] Saved {}", path_pro);
+    fb.save_ppm(format!("{prefix}_prosplit.ppm"))?;
 
-    // 4. Preview Gallery Scrubber
+    // 5. Preview Gallery
     fb.clear(Color::BLACK);
-    let gallery_rect = Rect::new(4, 2, 1596, 56);
     let gallery = GalleryWidget::new();
+    let gallery_rect = Rect::new(2, 1, 1612, 58);
     gallery.render(&mut fb, gallery_rect, &font);
     render_mode_button(&mut fb, mode_btn_rect, BarMode::Gallery, &font);
     clock_widget.render(&mut fb, clock_rect, &font);
-    let path_gallery = format!("{prefix}_gallery.ppm");
-    fb.save_ppm(&path_gallery)?;
-    println!("[TuxBar] Saved {}", path_gallery);
+    fb.save_ppm(format!("{prefix}_gallery.ppm"))?;
 
     println!("[TuxBar] Frame preview export complete ✓");
     Ok(())
@@ -225,11 +226,11 @@ fn run_test() -> Result<()> {
 }
 
 fn render_mode_button(fb: &mut Framebuffer, rect: Rect, mode: BarMode, font: &FontEngine) {
-    fb.draw_rounded_rect(rect, 6, Color::DARK_GRAY);
+    fb.draw_rounded_rect(rect, 6, Color::rgb(45, 55, 72));
     let label = mode.label();
-    let text_w = font.measure_text_width(label, 11.0);
+    let text_w = font.measure_text_width(label, 19.0);
     let text_x = rect.x + ((rect.width as i32 - text_w as i32) / 2);
-    fb.draw_text(font, label, text_x, rect.y + 27, 11.0, Color::CYAN);
+    fb.draw_text(font, label, text_x, rect.y + 38, 19.0, Color::CYAN);
 }
 
 fn run_daemon(card_path: &str, input_path: &str) -> Result<()> {
@@ -256,19 +257,41 @@ fn run_daemon(card_path: &str, input_path: &str) -> Result<()> {
     let mut drm = DrmBackend::open_touchbar(Path::new(card_path))?;
     println!("[TuxBar] DRM display hardware attached successfully.");
 
-    // Open Touch listener (non-fatal if input device is busy)
-    let mut touch = TouchListener::open(Path::new(input_path)).ok();
+    // Open Touch listener (prefer auto-detection of hardware digitizer)
+    let mut touch = TouchListener::find_touchbar_device()
+        .or_else(|| TouchListener::open(Path::new(input_path)).ok());
     if touch.is_some() {
         println!("[TuxBar] Touchscreen digitizer attached successfully.");
     } else {
         println!("[TuxBar] Warning: Touchscreen in use or permissions missing; running in display-only mode.");
     }
 
+    // Open Apple Internal Keyboard listener to detect physical Fn key
+    let mut keyboard = KeyboardListener::find_apple_keyboard();
+    if keyboard.is_some() {
+        println!("[TuxBar] Apple keyboard listener attached (Fn key auto-switch enabled).");
+    }
+
+    // Open Virtual Keyboard for emitting real Esc, F1..F12 keystrokes
+    let mut virtual_kbd = match VirtualKeyboard::new() {
+        Ok(vk) => {
+            println!("[TuxBar] Virtual Keyboard subsystem created via /dev/uinput.");
+            Some(vk)
+        }
+        Err(e) => {
+            println!("[TuxBar] Notice: /dev/uinput not available ({}), running virtual keys in visual-only mode.", e);
+            None
+        }
+    };
+
     let running = Arc::new(AtomicBool::new(true));
     let r = running.clone();
     ctrlc_handler(r);
 
     let mut current_mode = BarMode::ProSplit;
+    let mut previous_mode = BarMode::ProSplit;
+    let mut fn_key_is_held = false;
+
     let mut mpris = MprisClient::new();
     let mut telemetry = TelemetryProvider::new();
 
@@ -276,18 +299,42 @@ fn run_daemon(card_path: &str, input_path: &str) -> Result<()> {
     let mut spectrum = SpectrumVisualizerWidget::new();
     let mut cyberdeck = CyberdeckWidget::new();
     let mut gallery = GalleryWidget::new();
+    let mut fn_keys = FnKeysWidget::new();
     let mut stats_widget = SystemStatsWidget::new();
     let mut clock_widget = ClockWidget;
-
-    // Common layout regions
-    let mode_btn_rect = Rect::new(1610, 8, 136, 44);
-    let clock_rect = Rect::new(1756, 2, 248, 56);
 
     let mut active_touches: Vec<ActiveTouch> = Vec::new();
     let mut frame_count = 0u64;
 
     while running.load(Ordering::SeqCst) {
-        // 1. Process touch events
+        // 1. Intercept physical keyboard Fn key
+        if let Some(ref mut kbd) = keyboard {
+            if let Some(held) = kbd.poll_fn_key() {
+                if held && !fn_key_is_held {
+                    fn_key_is_held = true;
+                    if current_mode != BarMode::FnKeys {
+                        previous_mode = current_mode;
+                        current_mode = BarMode::FnKeys;
+                        println!("[TuxBar] Physical Fn key pressed -> showing F1-F12 Keys");
+                    }
+                } else if !held && fn_key_is_held {
+                    fn_key_is_held = false;
+                    if current_mode == BarMode::FnKeys {
+                        current_mode = previous_mode;
+                        println!("[TuxBar] Physical Fn key released -> returning to {}", current_mode.label());
+                    }
+                }
+            }
+        }
+
+        // Dynamic layout definitions based on mode (full 58px height)
+        let (mode_btn_rect, clock_rect) = if current_mode == BarMode::FnKeys {
+            (Rect::new(1786, 1, 220, 58), Rect::new(0, 0, 0, 0))
+        } else {
+            (Rect::new(1620, 1, 182, 58), Rect::new(1806, 1, 198, 58))
+        };
+
+        // 2. Process touch events
         if let Some(ref mut listener) = touch {
             if let Ok(events) = listener.poll_events() {
                 for event in events {
@@ -307,20 +354,49 @@ fn run_daemon(card_path: &str, input_path: &str) -> Result<()> {
                     // Check Mode Switcher button
                     if mode_btn_rect.contains(px, py) && event.phase == TouchPhase::Down {
                         current_mode = current_mode.next();
+                        previous_mode = current_mode;
                         println!("[TuxBar] Switched to mode: {}", current_mode.label());
                         continue;
                     }
 
                     // Dispatch to mode-specific widgets
                     match current_mode {
+                        BarMode::FnKeys => {
+                            let fn_rect = Rect::new(2, 1, 1778, 58);
+                            if fn_rect.contains(px, py) {
+                                let _ = fn_keys.handle_touch(&event, fn_rect);
+                                if event.phase == TouchPhase::Down {
+                                    let count = 13;
+                                    let gap = 5;
+                                    let total_gaps = (count - 1) * gap;
+                                    let btn_w = (fn_rect.width as i32 - total_gaps) / count;
+                                    let offset_x = px - fn_rect.x;
+                                    let stride = btn_w + gap;
+                                    let idx = (offset_x / stride) as usize;
+                                    if let Some(key) = FnKeysWidget::get_key_for_index(idx) {
+                                        if let Some(ref mut vk) = virtual_kbd {
+                                            let _ = vk.click_key(key);
+                                        }
+                                        println!("[TuxBar] Virtual Key Triggered: {:?}", key);
+                                    }
+                                }
+                            }
+                        }
                         BarMode::Audiophile => {
-                            let media_rect = Rect::new(4, 2, 720, 56);
-                            let spec_rect = Rect::new(730, 2, 870, 56);
+                            let media_rect = Rect::new(2, 1, 778, 58);
+                            let spec_rect = Rect::new(784, 1, 830, 58);
                             if media_rect.contains(px, py) {
                                 match now_playing.handle_touch(&event, media_rect) {
                                     WidgetAction::PlayPause => mpris.play_pause(),
                                     WidgetAction::NextTrack => mpris.next(),
                                     WidgetAction::PreviousTrack => mpris.previous(),
+                                    WidgetAction::ToggleMode => {
+                                        if let Some(ref mut vk) = virtual_kbd {
+                                            let _ = vk.click_key(evdev::Key::KEY_ESC);
+                                        }
+                                        current_mode = current_mode.next();
+                                        previous_mode = current_mode;
+                                    }
                                     _ => {}
                                 }
                             } else if spec_rect.contains(px, py) {
@@ -328,42 +404,60 @@ fn run_daemon(card_path: &str, input_path: &str) -> Result<()> {
                             }
                         }
                         BarMode::Cyberdeck => {
-                            let cyber_rect = Rect::new(4, 2, 1596, 56);
-                            if cyber_rect.contains(px, py) {
-                                let _ = cyberdeck.handle_touch(&event, cyber_rect);
+                            let cyber_rect = Rect::new(2, 1, 1612, 58);
+                            if cyber_rect.contains(px, py)
+                                && cyberdeck.handle_touch(&event, cyber_rect) == WidgetAction::ToggleMode
+                            {
+                                current_mode = current_mode.next();
+                                previous_mode = current_mode;
                             }
                         }
                         BarMode::ProSplit => {
-                            let pro_media = Rect::new(4, 2, 840, 56);
+                            let is_playing = !now_playing.info.title.is_empty();
+                            let pro_media = if is_playing {
+                                Rect::new(2, 1, 920, 58)
+                            } else {
+                                Rect::new(2, 1, 1280, 58)
+                            };
                             if pro_media.contains(px, py) {
                                 match now_playing.handle_touch(&event, pro_media) {
                                     WidgetAction::PlayPause => mpris.play_pause(),
                                     WidgetAction::NextTrack => mpris.next(),
                                     WidgetAction::PreviousTrack => mpris.previous(),
+                                    WidgetAction::ToggleMode => {
+                                        if let Some(ref mut vk) = virtual_kbd {
+                                            let _ = vk.click_key(evdev::Key::KEY_ESC);
+                                        }
+                                        current_mode = current_mode.next();
+                                        previous_mode = current_mode;
+                                    }
                                     _ => {}
                                 }
                             }
                         }
                         BarMode::Gallery => {
-                            let gallery_rect = Rect::new(4, 2, 1596, 56);
+                            let gallery_rect = Rect::new(2, 1, 1612, 58);
                             if gallery_rect.contains(px, py) {
                                 let _ = gallery.handle_touch(&event, gallery_rect);
                             }
                         }
                     }
 
-                    if clock_rect.contains(px, py) {
+                    if clock_rect.contains(px, py) && event.phase == TouchPhase::Down {
                         let _ = clock_widget.handle_touch(&event, clock_rect);
+                        current_mode = current_mode.next();
+                        previous_mode = current_mode;
                     }
                 }
             }
         }
 
-        // 2. Refresh dynamic data
+        // 3. Refresh dynamic data
         if frame_count.is_multiple_of(15) {
             let track = mpris.update();
-            spectrum.set_active(track.is_playing);
+            let is_playing = track.is_playing;
             now_playing.update_info(track.clone());
+            spectrum.set_active(is_playing);
         }
 
         if frame_count.is_multiple_of(30) {
@@ -372,51 +466,67 @@ fn run_daemon(card_path: &str, input_path: &str) -> Result<()> {
             stats_widget.update_stats(*stats);
         }
 
+        now_playing.tick_scroll();
         spectrum.update_frame();
         cyberdeck.tick();
-        now_playing.tick_scroll();
 
-        // 3. Render frame according to active mode
+        // 4. Render Layout onto Framebuffer
         fb.clear(Color::BLACK);
 
         match current_mode {
+            BarMode::FnKeys => {
+                let fn_rect = Rect::new(2, 1, 1778, 58);
+                fn_keys.render(&mut fb, fn_rect, &font);
+            }
             BarMode::Audiophile => {
-                let media_rect = Rect::new(4, 2, 720, 56);
-                let spec_rect = Rect::new(730, 2, 870, 56);
+                let media_rect = Rect::new(2, 1, 778, 58);
+                let spec_rect = Rect::new(784, 1, 830, 58);
                 now_playing.render(&mut fb, media_rect, &font);
                 spectrum.render(&mut fb, spec_rect, &font);
             }
             BarMode::Cyberdeck => {
-                let cyber_rect = Rect::new(4, 2, 1596, 56);
+                let cyber_rect = Rect::new(2, 1, 1612, 58);
                 cyberdeck.render(&mut fb, cyber_rect, &font);
             }
             BarMode::ProSplit => {
-                let pro_media = Rect::new(4, 2, 840, 56);
-                let pro_spec = Rect::new(850, 2, 380, 56);
-                let pro_stats = Rect::new(1240, 2, 360, 56);
-                now_playing.render(&mut fb, pro_media, &font);
-                spectrum.render(&mut fb, pro_spec, &font);
-                stats_widget.render(&mut fb, pro_stats, &font);
+                let is_playing = !now_playing.info.title.is_empty();
+                if is_playing {
+                    let pro_media = Rect::new(2, 1, 920, 58);
+                    let pro_spec = Rect::new(926, 1, 350, 58);
+                    let pro_stats = Rect::new(1282, 1, 332, 58);
+
+                    now_playing.render(&mut fb, pro_media, &font);
+                    spectrum.render(&mut fb, pro_spec, &font);
+                    stats_widget.render(&mut fb, pro_stats, &font);
+                } else {
+                    let pro_media = Rect::new(2, 1, 1280, 58);
+                    let pro_stats = Rect::new(1286, 1, 328, 58);
+
+                    now_playing.render(&mut fb, pro_media, &font);
+                    stats_widget.render(&mut fb, pro_stats, &font);
+                }
             }
             BarMode::Gallery => {
-                let gallery_rect = Rect::new(4, 2, 1596, 56);
+                let gallery_rect = Rect::new(2, 1, 1612, 58);
                 gallery.render(&mut fb, gallery_rect, &font);
             }
         }
 
         // Draw mode button and clock
         render_mode_button(&mut fb, mode_btn_rect, current_mode, &font);
-        clock_widget.render(&mut fb, clock_rect, &font);
+        if clock_rect.width > 0 {
+            clock_widget.render(&mut fb, clock_rect, &font);
+        }
 
         // Render luminous touch glow indicators
         for touch in &mut active_touches {
-            let alpha = (touch.intensity * 180.0) as u8;
-            fb.draw_glow_circle(touch.x, touch.y, 20, Color::rgba(0, 240, 255, alpha));
+            let alpha = (touch.intensity * 200.0) as u8;
+            fb.draw_glow_circle(touch.x, touch.y, 22, Color::rgba(0, 240, 255, alpha));
             touch.intensity -= 0.15;
         }
         active_touches.retain(|t| t.intensity > 0.05);
 
-        // 4. Submit to DRM hardware
+        // 5. Submit to DRM hardware
         let _ = drm.draw_pixels(&fb.pixels);
 
         frame_count += 1;

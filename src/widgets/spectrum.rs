@@ -48,9 +48,8 @@ impl SpectrumVisualizerWidget {
                 // Smooth dampening towards target
                 self.levels[i] += (target - self.levels[i]) * 0.4;
             } else {
-                // Ambient idle breathing wave
-                let idle = ((self.tick * 0.5 + i as f32 * 0.2).sin() * 0.5 + 0.5) * 0.15 + 0.05;
-                self.levels[i] += (idle - self.levels[i]) * 0.2;
+                // When audio is stopped, decay smoothly to zero (no fake movement)
+                self.levels[i] = (self.levels[i] * 0.7).max(0.0);
             }
 
             // Update peak-hold indicators

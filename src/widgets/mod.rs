@@ -1,5 +1,6 @@
 pub mod clock;
 pub mod cyberdeck;
+pub mod fn_keys;
 pub mod gallery;
 pub mod now_playing;
 pub mod spectrum;

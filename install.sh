@@ -16,7 +16,7 @@ NC='\033[0m'
 echo -e "${CYAN}==========================================================================${NC}"
 echo -e " 🚀 ${GREEN}TuxBar Installer — Dynamic Touch Bar Engine for Linux${NC}"
 echo -e " Autor: Juan José Monzón (@mylnzon58)"
-echo -e " Arquitectura: Pure-Rust DRM KMS + MPRIS D-Bus + Hardware Telemetry"
+echo -e " Arquitectura: Pure-Rust DRM KMS + MPRIS D-Bus + Virtual uinput + Evdev"
 echo -e "${CYAN}==========================================================================${NC}"
 
 if [ "$EUID" -ne 0 ]; then
@@ -26,21 +26,19 @@ fi
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# 1. Compilar binario optimizado si no existe
-echo -e "\n${CYAN}[1/4] Verificando compilación del binario en Rust...${NC}"
-if [ ! -f "$SCRIPT_DIR/target/release/tuxbar" ]; then
-    echo -e "Compilando binario de alto rendimiento con cargo release..."
-    cd "$SCRIPT_DIR" && cargo build --release
-fi
+# 1. Compilar binario de alto rendimiento
+echo -e "\n${CYAN}[1/4] Compilando binario optimizado en Rust (cargo release)...${NC}"
+cd "$SCRIPT_DIR"
+cargo build --release
+echo -e "${GREEN}[✓] Binario TuxBar verificado y compilado con éxito.${NC}"
 
-echo -e "${GREEN}[✓] Binario TuxBar verificado con éxito.${NC}"
-
-# 2. Instalar binario en /usr/local/bin (deteniendo instancias previas)
-echo -e "\n${CYAN}[2/4] Instalando ejecutable en el sistema...${NC}"
+# 2. Instalar binario en /usr/local/bin (deteniendo instancias previas limpiamente)
+echo -e "\n${CYAN}[2/4] Instalando ejecutable en /usr/local/bin...${NC}"
 systemctl kill -s SIGKILL tuxbar.service 2>/dev/null || true
 pkill -9 -x tuxbar 2>/dev/null || true
 systemctl stop tuxbar.service 2>/dev/null || true
 install -m 755 "$SCRIPT_DIR/target/release/tuxbar" /usr/local/bin/tuxbar
+echo -e "${GREEN}[✓] Ejecutable instalado.${NC}"
 
 # 3. Crear script de conmutación instantánea (tuxbar-toggle)
 echo -e "\n${CYAN}[3/4] Instalando conmutador rápido 'tuxbar-toggle'...${NC}"
@@ -55,18 +53,19 @@ fi
 if systemctl is-active --quiet tuxbar.service; then
     echo "[-] Desactivando TuxBar (Widgets Dinámicos)..."
     systemctl stop tuxbar.service
-    echo "[+] Restaurando tiny-dfr (Teclado F1-F12 estático)..."
+    echo "[+] Restaurando tiny-dfr (Modo tradicional)..."
     systemctl start tiny-dfr.service
-    echo "✓ Touch Bar restaurada a modo tradicional (tiny-dfr)."
+    echo "✓ Touch Bar restaurada a tiny-dfr."
 else
     echo "[-] Deteniendo tiny-dfr temporalmente..."
     systemctl stop tiny-dfr.service
-    echo "[+] Activando TuxBar (Música en vivo, Telemetría y Widgets)..."
+    echo "[+] Activando TuxBar (Música, Telemetría, Teclas F1-F12 y Galería)..."
     systemctl start tuxbar.service
     echo "✓ TuxBar activo en la Touch Bar."
 fi
 EOF
 chmod 755 /usr/local/bin/tuxbar-toggle
+echo -e "${GREEN}[✓] tuxbar-toggle instalado con éxito.${NC}"
 
 # 4. Configurar servicio systemd y activar inmediatamente
 echo -e "\n${CYAN}[4/4] Configurando y activando TuxBar en la Touch Bar de inmediato...${NC}"
@@ -80,7 +79,7 @@ echo -e "${GREEN}[✓] TuxBar activado automáticamente en la Touch Bar.${NC}"
 echo -e "\n${GREEN}==========================================================================${NC}"
 echo -e " ${GREEN}✓ ¡Instalación de TuxBar completada con éxito!${NC}"
 echo -e " Ejecutable instalado en: ${CYAN}/usr/local/bin/tuxbar${NC}"
-echo -e " Comando de alternancia:  ${CYAN}tuxbar-toggle${NC} (cambia entre TuxBar y teclado estándar)"
+echo -e " Comando de alternancia:  ${CYAN}tuxbar-toggle${NC} (cambia entre TuxBar y tiny-dfr)"
 echo -e " Comandos de control CLI: ${CYAN}tuxbar status${NC} | ${CYAN}tuxbar next${NC} | ${CYAN}tuxbar play-pause${NC}"
 echo -e "${CYAN}--------------------------------------------------------------------------${NC}"
 echo -e " 💙 ${GREEN}Mensaje del autor / Author's note:${NC}"
@@ -92,4 +91,3 @@ echo -e " ⭐ Si este proyecto le dio vida e interactividad a la Touch Bar de tu
 echo -e " 👉 ${CYAN}https://github.com/mylnzon58/tuxbar${NC}"
 echo -e " ¡Muchas gracias por tu apoyo! / Thank you for your support!"
 echo -e "${CYAN}==========================================================================${NC}"
-

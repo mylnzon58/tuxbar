@@ -72,6 +72,7 @@ impl Color {
 pub enum BarMode {
     #[default]
     ProSplit,
+    FnKeys,
     Audiophile,
     Cyberdeck,
     Gallery,
@@ -81,7 +82,8 @@ impl BarMode {
     #[must_use]
     pub fn next(self) -> Self {
         match self {
-            Self::ProSplit => Self::Audiophile,
+            Self::ProSplit => Self::FnKeys,
+            Self::FnKeys => Self::Audiophile,
             Self::Audiophile => Self::Cyberdeck,
             Self::Cyberdeck => Self::Gallery,
             Self::Gallery => Self::ProSplit,
@@ -91,7 +93,8 @@ impl BarMode {
     #[must_use]
     pub fn label(self) -> &'static str {
         match self {
-            Self::ProSplit => "PRO SPLIT",
+            Self::ProSplit => "PRO WIDGETS",
+            Self::FnKeys => "F1-F12 KEYS",
             Self::Audiophile => "AUDIOPHILE",
             Self::Cyberdeck => "CYBERDECK",
             Self::Gallery => "GALLERY",

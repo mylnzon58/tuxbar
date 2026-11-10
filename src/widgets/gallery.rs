@@ -1,5 +1,6 @@
 //! Touch Bar Image Viewer & Filmstrip Scrubber Widget
 //! Re-creates the iconic macOS Touch Bar Photo Scrubber in 100% pure Rust for Linux.
+//! Ergonomically optimized to take advantage of the full 60px height of the Touch Bar.
 
 use std::fs;
 use std::path::PathBuf;
@@ -60,54 +61,52 @@ impl GalleryWidget {
                     paths.sort();
                     paths.reverse(); // Most recent first
 
-                    for path in paths.into_iter().take(16 - loaded.len()) {
-                        if let Ok(img) = image::open(&path) {
-                            let thumb = img.resize_exact(76, 48, image::imageops::FilterType::Triangle).to_rgba8();
-                            let name = path.file_name().and_then(|n| n.to_str()).unwrap_or("photo").to_string();
-                            loaded.push(PhotoItem { path, name, thumbnail: thumb });
+                    for p in paths.into_iter().take(12) {
+                        if let Ok(img) = image::open(&p) {
+                            // Resize to 84x54 thumbnail
+                            let thumb = img.thumbnail_exact(84, 54).to_rgba8();
+                            let name = p.file_stem().and_then(|s| s.to_str()).unwrap_or("photo").to_string();
+                            loaded.push(PhotoItem {
+                                path: p,
+                                name,
+                                thumbnail: thumb,
+                            });
                         }
                     }
                 }
             }
         }
 
-        // 2. Procedural Fallback if no images found
+        // 2. Fallback procedural demo photos if no images found
         if loaded.is_empty() {
-            loaded = Self::generate_procedural_gallery();
+            let demos = [
+                ("Neon Grid", [0, 240, 255, 255], [138, 43, 226, 255]),
+                ("Cyber Sun", [255, 0, 128, 255], [255, 140, 0, 255]),
+                ("Aurora", [0, 255, 136, 255], [0, 100, 200, 255]),
+                ("Synth Sunset", [255, 80, 0, 255], [80, 0, 120, 255]),
+                ("Matrix Code", [0, 255, 65, 255], [0, 40, 10, 255]),
+            ];
+
+            for (name, c1, c2) in demos {
+                let mut img = RgbaImage::new(84, 54);
+                for y in 0..54 {
+                    for x in 0..84 {
+                        let t = (x as f32 + y as f32) / 138.0;
+                        let r = (c1[0] as f32 * (1.0 - t) + c2[0] as f32 * t) as u8;
+                        let g = (c1[1] as f32 * (1.0 - t) + c2[1] as f32 * t) as u8;
+                        let b = (c1[2] as f32 * (1.0 - t) + c2[2] as f32 * t) as u8;
+                        img.put_pixel(x, y, image::Rgba([r, g, b, 255]));
+                    }
+                }
+                loaded.push(PhotoItem {
+                    path: PathBuf::from(format!("/demo/{name}")),
+                    name: name.to_string(),
+                    thumbnail: img,
+                });
+            }
         }
 
         self.photos = loaded;
-    }
-
-    fn generate_procedural_gallery() -> Vec<PhotoItem> {
-        let mut items = Vec::new();
-        let palettes = [
-            ("Cyberpunk Neon", [0, 240, 255], [217, 70, 239]),
-            ("Sunset Horizon", [249, 115, 22], [244, 63, 94]),
-            ("Emerald Matrix", [16, 185, 129], [6, 182, 212]),
-            ("Deep Cosmos", [99, 102, 241], [168, 85, 247]),
-            ("Solar Flare", [234, 179, 8], [239, 68, 68]),
-            ("Nordic Glacier", [56, 189, 248], [30, 41, 59]),
-        ];
-
-        for (name, c1, c2) in palettes {
-            let mut img = RgbaImage::new(76, 48);
-            for y in 0..48 {
-                for x in 0..76 {
-                    let t = (x as f32 / 76.0 + y as f32 / 48.0) / 2.0;
-                    let r = ((1.0 - t) * c1[0] as f32 + t * c2[0] as f32) as u8;
-                    let g = ((1.0 - t) * c1[1] as f32 + t * c2[1] as f32) as u8;
-                    let b = ((1.0 - t) * c1[2] as f32 + t * c2[2] as f32) as u8;
-                    img.put_pixel(x, y, image::Rgba([r, g, b, 255]));
-                }
-            }
-            items.push(PhotoItem {
-                path: PathBuf::from(name),
-                name: name.to_string(),
-                thumbnail: img,
-            });
-        }
-        items
     }
 
     pub fn select_next(&mut self) {
@@ -139,67 +138,62 @@ impl GalleryWidget {
 
 impl Widget for GalleryWidget {
     fn render(&self, fb: &mut Framebuffer, area: Rect, font: &FontEngine) {
-        fb.draw_rounded_rect(area, 6, Color::CARD_BG);
+        fb.fill_rect(area, Color::BLACK);
 
-        let mut cur_x = area.x + 10;
+        let btn_h = area.height.saturating_sub(2); // 58px tall
+        let btn_y = area.y + 1;
+        let mut cur_x = area.x + 4;
 
-        // 1. Header Badge
-        let badge_text = "📷 GALLERY";
-        let badge_w = font.measure_text_width(badge_text, 11.0) + 12;
-        let badge_rect = Rect::new(cur_x, area.y + 16, badge_w, 24);
-        fb.draw_rounded_rect(badge_rect, 4, Color::DARK_GRAY);
-        fb.draw_text(font, badge_text, cur_x + 6, area.y + 32, 11.0, Color::CYAN);
-        cur_x += badge_w as i32 + 14;
+        // 1. Navigation Controls [ ◀ ] [ 🔍 ABRIR ] [ ▶ ] (Full height 58px)
+        let prev_w = 64;
+        let prev_rect = Rect::new(cur_x, btn_y, prev_w, btn_h);
+        fb.draw_rounded_rect(prev_rect, 6, Color::rgb(35, 42, 54));
+        let prev_tw = font.measure_text_width("◀", 22.0);
+        fb.draw_text(font, "◀", cur_x + (prev_w as i32 - prev_tw as i32) / 2, btn_y + 38, 22.0, Color::WHITE);
+        cur_x += prev_w as i32 + 6;
+
+        let open_w = 110;
+        let open_rect = Rect::new(cur_x, btn_y, open_w, btn_h);
+        fb.draw_rounded_rect(open_rect, 6, Color::ACCENT);
+        let open_tw = font.measure_text_width("ABRIR", 20.0);
+        fb.draw_text(font, "ABRIR", cur_x + (open_w as i32 - open_tw as i32) / 2, btn_y + 38, 20.0, Color::BLACK);
+        cur_x += open_w as i32 + 6;
+
+        let next_w = 64;
+        let next_rect = Rect::new(cur_x, btn_y, next_w, btn_h);
+        fb.draw_rounded_rect(next_rect, 6, Color::rgb(35, 42, 54));
+        let next_tw = font.measure_text_width("▶", 22.0);
+        fb.draw_text(font, "▶", cur_x + (next_w as i32 - next_tw as i32) / 2, btn_y + 38, 22.0, Color::WHITE);
+        cur_x += next_w as i32 + 12;
 
         // 2. Active photo info badge
         if let Some(item) = self.photos.get(self.selected_idx) {
             let info_str = format!("{}/{} · {}", self.selected_idx + 1, self.photos.len(), item.name);
-            let display_name = if info_str.len() > 24 {
-                format!("{}...", &info_str[..22])
+            let display_name = if info_str.len() > 18 {
+                format!("{}...", &info_str[..16])
             } else {
                 info_str
             };
-            fb.draw_text(font, &display_name, cur_x, area.y + 32, 12.0, Color::WHITE);
-            cur_x += 180;
+            fb.draw_text(font, &display_name, cur_x, btn_y + 38, 18.0, Color::WHITE);
+            cur_x += 160;
         }
 
-        // 3. Navigation Controls [ ◀ ] [ 🔍 OPEN ] [ ▶ ]
-        let btn_y = area.y + 12;
-        let btn_h = 32;
-
-        let prev_rect = Rect::new(cur_x, btn_y, 36, btn_h);
-        fb.draw_rounded_rect(prev_rect, 4, Color::DARK_GRAY);
-        fb.draw_text(font, "◀", cur_x + 12, btn_y + 21, 13.0, Color::WHITE);
-        cur_x += 42;
-
-        let open_rect = Rect::new(cur_x, btn_y, 64, btn_h);
-        fb.draw_rounded_rect(open_rect, 4, Color::ACCENT);
-        fb.draw_text(font, "OPEN", cur_x + 12, btn_y + 21, 12.0, Color::WHITE);
-        cur_x += 70;
-
-        let next_rect = Rect::new(cur_x, btn_y, 36, btn_h);
-        fb.draw_rounded_rect(next_rect, 4, Color::DARK_GRAY);
-        fb.draw_text(font, "▶", cur_x + 12, btn_y + 21, 13.0, Color::WHITE);
-        cur_x += 50;
-
-        // 4. Horizontal Filmstrip Thumbnails
+        // 3. Horizontal Filmstrip Thumbnails
         let filmstrip_x = cur_x;
         let filmstrip_w = (area.x + area.width as i32) - filmstrip_x - 10;
         if filmstrip_w <= 0 {
             return;
         }
 
-        let thumb_w = 76;
-        let thumb_h = 48;
+        let thumb_w = 84;
+        let thumb_h = 54;
         let thumb_gap = 8;
-        let thumb_y = area.y + 6;
+        let thumb_y = area.y + 3;
 
         for (i, item) in self.photos.iter().enumerate() {
             let item_x = filmstrip_x + (i as i32 * (thumb_w + thumb_gap)) - self.scroll_offset as i32;
 
-            // Only render if visible within filmstrip area
             if item_x + thumb_w > filmstrip_x && item_x < filmstrip_x + filmstrip_w {
-                // If selected, draw glowing highlight frame
                 if i == self.selected_idx {
                     let border_rect = Rect::new(item_x - 2, thumb_y - 2, thumb_w as u32 + 4, thumb_h as u32 + 4);
                     fb.draw_rounded_rect(border_rect, 6, Color::CYAN);
@@ -218,11 +212,16 @@ impl Widget for GalleryWidget {
             TouchPhase::Down => {
                 self.last_touch_x = Some(px);
 
-                // Check button hits: Prev, Open, Next
-                let cur_x = area.x + 10 + 90 + 180;
-                let prev_rect = Rect::new(cur_x, area.y + 12, 36, 32);
-                let open_rect = Rect::new(cur_x + 42, area.y + 12, 64, 32);
-                let next_rect = Rect::new(cur_x + 112, area.y + 12, 36, 32);
+                let btn_h = area.height;
+                let btn_y = area.y;
+                let mut cur_x = area.x + 4;
+
+                let prev_rect = Rect::new(cur_x, btn_y, 64 + 4, btn_h);
+                cur_x += 64 + 6;
+                let open_rect = Rect::new(cur_x, btn_y, 110 + 4, btn_h);
+                cur_x += 110 + 6;
+                let next_rect = Rect::new(cur_x, btn_y, 64 + 4, btn_h);
+                cur_x += 64 + 12;
 
                 if prev_rect.contains(px, py) {
                     self.select_prev();
@@ -238,9 +237,9 @@ impl Widget for GalleryWidget {
                 }
 
                 // Check click directly on filmstrip thumbnails
-                let filmstrip_x = cur_x + 162;
+                let filmstrip_x = cur_x + 160;
                 if px >= filmstrip_x {
-                    let thumb_stride = 76 + 8;
+                    let thumb_stride = 84 + 8;
                     let clicked_offset = (px - filmstrip_x) + self.scroll_offset as i32;
                     let clicked_idx = (clicked_offset / thumb_stride) as usize;
                     if clicked_idx < self.photos.len() {
