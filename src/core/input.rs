@@ -11,13 +11,14 @@ pub struct TouchListener {
     device: Device,
     max_raw_x: f32,
     max_raw_y: f32,
-    
+    current_slot: u32,
+
     // Position state
     cur_x: u32,
     cur_y: u32,
     last_reported_x: u32,
     last_reported_y: u32,
-    
+
     // Contact state
     is_down: bool,
     pending_down: bool,
@@ -36,18 +37,30 @@ impl TouchListener {
             libc::fcntl(fd, libc::F_SETFL, flags | libc::O_NONBLOCK);
         }
 
-        // Apple Touch Bar hardware reported boundaries (0..32767 X, 0..127 Y)
-        let max_x = 32767.0f32;
-        let max_y = 127.0f32;
+        // Query reported boundaries directly from hardware axis metadata
+        let (max_x, max_y, init_x, init_y) = if let Ok(state) = device.get_abs_state() {
+            let abs_x = &state[AbsoluteAxisType::ABS_X.0 as usize];
+            let abs_y = &state[AbsoluteAxisType::ABS_Y.0 as usize];
+            let mx = if abs_x.maximum > 0 { abs_x.maximum as f32 } else { 32767.0 };
+            let my = if abs_y.maximum > 0 { abs_y.maximum as f32 } else { 127.0 };
+            let ix = ((abs_x.value as f32 / mx) * 2008.0).clamp(0.0, 2007.0) as u32;
+            let iy = ((abs_y.value as f32 / my) * 60.0).clamp(0.0, 59.0) as u32;
+            (mx, my, ix, iy)
+        } else {
+            (32767.0, 127.0, 0, 0)
+        };
+
+        println!("[TuxBar] Touch digitizer initialized (axes: max_x={:.0}, max_y={:.0})", max_x, max_y);
 
         Ok(Self {
             device,
             max_raw_x: max_x,
             max_raw_y: max_y,
-            cur_x: 0,
-            cur_y: 0,
-            last_reported_x: 0,
-            last_reported_y: 0,
+            current_slot: 0,
+            cur_x: init_x,
+            cur_y: init_y,
+            last_reported_x: init_x,
+            last_reported_y: init_y,
             is_down: false,
             pending_down: false,
             pending_up: false,
@@ -84,23 +97,45 @@ impl TouchListener {
                     match ev.event_type() {
                         EventType::ABSOLUTE => {
                             let code = AbsoluteAxisType(ev.code());
-                            if code == AbsoluteAxisType::ABS_MT_POSITION_X || code == AbsoluteAxisType::ABS_X {
-                                let normalized = ((ev.value() as f32 / self.max_raw_x) * 2008.0).clamp(0.0, 2007.0);
-                                self.cur_x = normalized as u32;
-                                self.pos_updated = true;
-                            } else if code == AbsoluteAxisType::ABS_MT_POSITION_Y || code == AbsoluteAxisType::ABS_Y {
-                                let normalized = ((ev.value() as f32 / self.max_raw_y) * 60.0).clamp(0.0, 59.0);
-                                self.cur_y = normalized as u32;
-                                self.pos_updated = true;
-                            } else if code == AbsoluteAxisType::ABS_MT_TRACKING_ID {
-                                let tracking_id = ev.value();
-                                if tracking_id >= 0 {
-                                    self.pending_down = true;
-                                    self.pending_up = false;
-                                } else {
-                                    self.pending_up = true;
-                                    self.pending_down = false;
+                            match code {
+                                AbsoluteAxisType::ABS_MT_SLOT => {
+                                    self.current_slot = ev.value() as u32;
                                 }
+                                AbsoluteAxisType::ABS_X => {
+                                    let normalized = ((ev.value() as f32 / self.max_raw_x) * 2008.0).clamp(0.0, 2007.0);
+                                    self.cur_x = normalized as u32;
+                                    self.pos_updated = true;
+                                }
+                                AbsoluteAxisType::ABS_Y => {
+                                    let normalized = ((ev.value() as f32 / self.max_raw_y) * 60.0).clamp(0.0, 59.0);
+                                    self.cur_y = normalized as u32;
+                                    self.pos_updated = true;
+                                }
+                                AbsoluteAxisType::ABS_MT_POSITION_X => {
+                                    if self.current_slot == 0 {
+                                        let normalized = ((ev.value() as f32 / self.max_raw_x) * 2008.0).clamp(0.0, 2007.0);
+                                        self.cur_x = normalized as u32;
+                                        self.pos_updated = true;
+                                    }
+                                }
+                                AbsoluteAxisType::ABS_MT_POSITION_Y => {
+                                    if self.current_slot == 0 {
+                                        let normalized = ((ev.value() as f32 / self.max_raw_y) * 60.0).clamp(0.0, 59.0);
+                                        self.cur_y = normalized as u32;
+                                        self.pos_updated = true;
+                                    }
+                                }
+                                AbsoluteAxisType::ABS_MT_TRACKING_ID => {
+                                    if self.current_slot == 0 {
+                                        let tracking_id = ev.value();
+                                        if tracking_id >= 0 {
+                                            self.pending_down = true;
+                                        } else {
+                                            self.pending_up = true;
+                                        }
+                                    }
+                                }
+                                _ => {}
                             }
                         }
                         EventType::KEY => {
@@ -108,16 +143,32 @@ impl TouchListener {
                             if key == Key::BTN_TOUCH {
                                 if ev.value() == 1 {
                                     self.pending_down = true;
-                                    self.pending_up = false;
                                 } else {
                                     self.pending_up = true;
-                                    self.pending_down = false;
                                 }
                             }
                         }
                         EventType::SYNCHRONIZATION => {
-                            // Frame complete: Dispatch touch event with current coordinates
-                            if self.pending_down {
+                            if self.pending_down && self.pending_up {
+                                // Fast tap completed within single frame
+                                self.pending_down = false;
+                                self.pending_up = false;
+                                self.is_down = false;
+                                self.last_reported_x = self.cur_x;
+                                self.last_reported_y = self.cur_y;
+                                events.push(TouchEvent {
+                                    slot: 0,
+                                    x: self.cur_x,
+                                    y: self.cur_y,
+                                    phase: TouchPhase::Down,
+                                });
+                                events.push(TouchEvent {
+                                    slot: 0,
+                                    x: self.cur_x,
+                                    y: self.cur_y,
+                                    phase: TouchPhase::Up,
+                                });
+                            } else if self.pending_down {
                                 self.is_down = true;
                                 self.pending_down = false;
                                 self.last_reported_x = self.cur_x;
@@ -137,18 +188,19 @@ impl TouchListener {
                                     y: self.cur_y,
                                     phase: TouchPhase::Up,
                                 });
-                            } else if self.is_down && self.pos_updated 
-                                && ((self.cur_x as i32 - self.last_reported_x as i32).abs() > 2 
-                                    || (self.cur_y as i32 - self.last_reported_y as i32).abs() > 2) 
-                            {
-                                self.last_reported_x = self.cur_x;
-                                self.last_reported_y = self.cur_y;
-                                events.push(TouchEvent {
-                                    slot: 0,
-                                    x: self.cur_x,
-                                    y: self.cur_y,
-                                    phase: TouchPhase::Motion,
-                                });
+                            } else if self.is_down && self.pos_updated {
+                                if (self.cur_x as i32 - self.last_reported_x as i32).abs() > 1 
+                                    || (self.cur_y as i32 - self.last_reported_y as i32).abs() > 1 
+                                {
+                                    self.last_reported_x = self.cur_x;
+                                    self.last_reported_y = self.cur_y;
+                                    events.push(TouchEvent {
+                                        slot: 0,
+                                        x: self.cur_x,
+                                        y: self.cur_y,
+                                        phase: TouchPhase::Motion,
+                                    });
+                                }
                             }
                             self.pos_updated = false;
                         }

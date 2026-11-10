@@ -351,6 +351,8 @@ fn run_daemon(card_path: &str, input_path: &str) -> Result<()> {
                     let px = event.x as i32;
                     let py = event.y as i32;
 
+                    println!("[TuxBar] Touch: phase={:?}, pos=({}, {})", event.phase, px, py);
+
                     // Add touch glow effect point
                     if event.phase == TouchPhase::Down || event.phase == TouchPhase::Motion {
                         active_touches.retain(|t| (t.x - px).abs() > 30 || (t.y - py).abs() > 30);
