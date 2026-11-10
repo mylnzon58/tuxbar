@@ -149,8 +149,12 @@ impl GalleryWidget {
             if item.path.exists() {
                 let path_str = item.path.to_string_lossy();
                 let user = std::env::var("SUDO_USER").unwrap_or_else(|_| "zeeroj".to_string());
+                let cmd = format!(
+                    "XDG_RUNTIME_DIR=/run/user/1000 WAYLAND_DISPLAY=wayland-0 DISPLAY=:0 DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus xdg-open \"{}\" 2>/dev/null &",
+                    path_str
+                );
                 let _ = std::process::Command::new("su")
-                    .args(["-", &user, "-c", &format!("DISPLAY=:0 DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus xdg-open \"{}\"", path_str)])
+                    .args(["-", &user, "-c", &cmd])
                     .spawn();
                 let _ = std::process::Command::new("xdg-open")
                     .arg(&item.path)

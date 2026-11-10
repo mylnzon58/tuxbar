@@ -100,8 +100,11 @@ fn capture_loop(telemetry: Arc<Mutex<AudioTelemetry>>) {
                                     im -= s * phase.sin();
                                 }
                                 let mag = (re * re + im * im).sqrt() / (chunk_size as f32 / 4.0);
-                                let weight = if b < 8 { 1.3 } else if b < 20 { 1.0 } else { 0.8 };
-                                band_values[b] = (mag * weight).clamp(0.0, 1.0);
+                                let weight = if b < 8 { 1.4 } else if b < 20 { 1.1 } else { 0.85 };
+                                let raw_val = (mag * weight).clamp(0.0, 1.0);
+                                // Perceptual dynamic range boost for visible, bouncy bars at all volume levels
+                                let boosted = (raw_val * 2.5).powf(0.72).clamp(0.0, 1.0);
+                                band_values[b] = boosted;
                             }
                         }
 

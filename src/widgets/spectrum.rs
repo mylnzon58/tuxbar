@@ -54,15 +54,15 @@ impl SpectrumVisualizerWidget {
             for i in 0..BANDS_COUNT {
                 let target = audio.bands[i];
                 if target > self.levels[i] {
-                    self.levels[i] += (target - self.levels[i]) * 0.6;
+                    self.levels[i] += (target - self.levels[i]) * 0.75;
                 } else {
-                    self.levels[i] += (target - self.levels[i]) * 0.3;
+                    self.levels[i] += (target - self.levels[i]) * 0.4;
                 }
 
                 if self.levels[i] > self.peaks[i] {
                     self.peaks[i] = self.levels[i];
                 } else {
-                    self.peaks[i] = (self.peaks[i] - 0.02).max(0.0);
+                    self.peaks[i] = (self.peaks[i] - 0.025).max(0.0);
                 }
             }
         }
