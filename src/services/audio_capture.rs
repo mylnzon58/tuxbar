@@ -2,6 +2,7 @@
 //! Captures actual sound playing through the speakers and calculates real RMS, dB, and 32 frequency bands.
 
 use std::io::Read;
+use std::os::unix::process::CommandExt;
 use std::process::{Child, Command, Stdio};
 use std::sync::{Arc, Mutex};
 use std::thread;
@@ -130,14 +131,30 @@ fn capture_loop(telemetry: Arc<Mutex<AudioTelemetry>>) {
 fn spawn_audio_process() -> std::io::Result<Child> {
     let uid = unsafe { libc::geteuid() };
     if uid == 0 {
-        let user = std::env::var("SUDO_USER").unwrap_or_else(|_| "zeeroj".to_string());
-        if let Ok(child) = Command::new("su")
+        let target_uid = std::env::var("SUDO_UID")
+            .ok()
+            .and_then(|u| u.parse::<u32>().ok())
+            .unwrap_or(1000);
+        let target_gid = std::env::var("SUDO_GID")
+            .ok()
+            .and_then(|g| g.parse::<u32>().ok())
+            .unwrap_or(1000);
+
+        let runtime_dir = format!("/run/user/{target_uid}");
+
+        if let Ok(child) = Command::new("pw-record")
             .args([
+                "--target",
+                "@DEFAULT_AUDIO_SINK@",
                 "-",
-                &user,
-                "-c",
-                "pw-record --target @DEFAULT_AUDIO_SINK@ - --rate=8000 --channels=1 --format=s16 2>/dev/null || pw-record --target effect_input.filter-chain-speakers - --rate=8000 --channels=1 --format=s16",
+                "--rate=8000",
+                "--channels=1",
+                "--format=s16",
             ])
+            .uid(target_uid)
+            .gid(target_gid)
+            .env("XDG_RUNTIME_DIR", &runtime_dir)
+            .env("PIPEWIRE_RUNTIME_DIR", &runtime_dir)
             .stdout(Stdio::piped())
             .stderr(Stdio::null())
             .spawn()

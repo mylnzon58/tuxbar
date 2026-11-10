@@ -44,30 +44,29 @@ impl GalleryWidget {
     pub fn load_from_pictures_or_fallback(&mut self) {
         let mut loaded = Vec::new();
 
-        // 1. Scan user directories (/home/*/Pictures/Capturas de pantalla, etc.)
-        let mut dirs_to_check = vec![
-            PathBuf::from("/home/zeeroj/Pictures/Capturas de pantalla"),
-            PathBuf::from("/home/zeeroj/Pictures"),
-            PathBuf::from("/home/zeeroj/Desktop"),
-            PathBuf::from("/home/zeeroj/Downloads"),
-        ];
+        // 1. Dynamically scan user directories across /home/*/Pictures, Screenshots, Downloads
+        let mut dirs_to_check = Vec::new();
+
+        if let Ok(home) = std::env::var("HOME") {
+            let h = PathBuf::from(home);
+            dirs_to_check.push(h.join("Pictures/Capturas de pantalla"));
+            dirs_to_check.push(h.join("Pictures/Screenshots"));
+            dirs_to_check.push(h.join("Pictures"));
+            dirs_to_check.push(h.join("Desktop"));
+            dirs_to_check.push(h.join("Downloads"));
+        }
 
         if let Ok(entries) = fs::read_dir("/home") {
             for entry in entries.flatten() {
                 let p = entry.path();
                 if p.is_dir() {
                     dirs_to_check.push(p.join("Pictures/Capturas de pantalla"));
+                    dirs_to_check.push(p.join("Pictures/Screenshots"));
                     dirs_to_check.push(p.join("Pictures"));
+                    dirs_to_check.push(p.join("Desktop"));
                     dirs_to_check.push(p.join("Downloads"));
                 }
             }
-        }
-
-        if let Ok(home) = std::env::var("HOME") {
-            let h = PathBuf::from(home);
-            dirs_to_check.push(h.join("Pictures/Capturas de pantalla"));
-            dirs_to_check.push(h.join("Pictures"));
-            dirs_to_check.push(h.join("Downloads"));
         }
 
         for dir in dirs_to_check {
