@@ -1,7 +1,6 @@
 //! MPRIS D-Bus client for discovering and controlling media players
 //! Works with Spotify, Chrome, Firefox, VLC, and any MPRIS compliant player.
 
-use std::collections::HashMap;
 use zbus::blocking::Connection;
 use zbus::zvariant::OwnedValue;
 
@@ -57,25 +56,58 @@ impl MprisClient {
             return &self.cached_info;
         };
 
-        // 1. Discover active players if needed
-        if self.active_bus_name.is_none() {
-            if let Ok(reply) = conn.call_method(
-                Some("org.freedesktop.DBus"),
-                "/org/freedesktop/DBus",
-                Some("org.freedesktop.DBus"),
-                "ListNames",
-                &(),
-            ) {
-                if let Ok(names) = reply.body().deserialize::<Vec<String>>() {
-                    for name in names {
-                        if name.starts_with("org.mpris.MediaPlayer2.") {
-                            self.active_bus_name = Some(name);
-                            break;
+        // 1. Discover active players (prioritizing actively Playing players)
+        let mut target_bus = self.active_bus_name.clone();
+
+        if let Ok(reply) = conn.call_method(
+            Some("org.freedesktop.DBus"),
+            "/org/freedesktop/DBus",
+            Some("org.freedesktop.DBus"),
+            "ListNames",
+            &(),
+        ) {
+            if let Ok(names) = reply.body().deserialize::<Vec<String>>() {
+                let mpris_players: Vec<String> = names
+                    .into_iter()
+                    .filter(|n| n.starts_with("org.mpris.MediaPlayer2."))
+                    .collect();
+
+                // If current target no longer exists on D-Bus, reset it
+                if let Some(ref curr) = target_bus {
+                    if !mpris_players.contains(curr) {
+                        target_bus = None;
+                    }
+                }
+
+                // Check if any player is actively Playing
+                let mut found_playing = None;
+                for player in &mpris_players {
+                    if let Ok(reply) = conn.call_method(
+                        Some(player.as_str()),
+                        "/org/mpris/MediaPlayer2",
+                        Some("org.freedesktop.DBus.Properties"),
+                        "Get",
+                        &("org.mpris.MediaPlayer2.Player", "PlaybackStatus"),
+                    ) {
+                        if let Ok(val) = reply.body().deserialize::<OwnedValue>() {
+                            let s = format!("{val:?}");
+                            if s.contains("Playing") {
+                                found_playing = Some(player.clone());
+                                break;
+                            }
                         }
                     }
                 }
+
+                if let Some(playing_bus) = found_playing {
+                    target_bus = Some(playing_bus);
+                } else if target_bus.is_none() && !mpris_players.is_empty() {
+                    target_bus = Some(mpris_players[0].clone());
+                }
             }
         }
+
+        self.active_bus_name = target_bus;
 
         let Some(bus) = &self.active_bus_name else {
             self.cached_info = TrackInfo::default();
@@ -119,17 +151,17 @@ impl MprisClient {
             "Get",
             &("org.mpris.MediaPlayer2.Player", "Metadata"),
         ) {
-            if let Ok(val) = meta_reply.body().deserialize::<HashMap<String, OwnedValue>>() {
-                if let Some(t) = val.get("xesam:title") {
-                    title = extract_str(t);
-                }
-                if let Some(a) = val.get("xesam:artist") {
-                    artist = extract_str(a);
-                }
-                if let Some(len) = val.get("mpris:length") {
-                    let l = extract_i64(len);
-                    if l > 0 {
-                        length_secs = (l as f32) / 1_000_000.0;
+            if let Ok(val) = meta_reply.body().deserialize::<OwnedValue>() {
+                if let zbus::zvariant::Value::Dict(dict) = val.into() {
+                    for (k, v) in dict.iter() {
+                        let key_str = format!("{k:?}");
+                        if key_str.contains("xesam:title") {
+                            title = extract_inner_str(v);
+                        } else if key_str.contains("xesam:artist") {
+                            artist = extract_inner_str(v);
+                        } else if key_str.contains("mpris:length") {
+                            length_secs = extract_inner_i64(v) as f32 / 1_000_000.0;
+                        }
                     }
                 }
             }
@@ -203,18 +235,41 @@ impl MprisClient {
     }
 }
 
-fn extract_str(val: &OwnedValue) -> String {
-    let raw = format!("{val:?}");
-    if let Some(start) = raw.find('"') {
-        if let Some(end) = raw[start + 1..].find('"') {
-            return raw[start + 1..start + 1 + end].to_string();
+fn extract_inner_str(v: &zbus::zvariant::Value) -> String {
+    let s = format!("{v:?}");
+    if let Some(pos) = s.find("Str(\"") {
+        let sub = &s[pos + 5..];
+        if let Some(end) = sub.find('"') {
+            return sub[..end].to_string();
         }
     }
-    raw
+    if let Some(start) = s.find('"') {
+        if let Some(end) = s[start + 1..].find('"') {
+            return s[start + 1..start + 1 + end].to_string();
+        }
+    }
+    String::new()
+}
+
+fn extract_inner_i64(v: &zbus::zvariant::Value) -> i64 {
+    let s = format!("{v:?}");
+    if let Some(start) = s.find("I64(") {
+        let sub = &s[start + 4..];
+        if let Some(end) = sub.find(')') {
+            return sub[..end].trim().parse::<i64>().unwrap_or(0);
+        }
+    }
+    0
 }
 
 fn extract_i64(val: &OwnedValue) -> i64 {
-    let raw = format!("{val:?}");
-    let digits: String = raw.chars().filter(|c| c.is_ascii_digit()).collect();
+    let s = format!("{val:?}");
+    if let Some(start) = s.find("I64(") {
+        let sub = &s[start + 4..];
+        if let Some(end) = sub.find(')') {
+            return sub[..end].trim().parse::<i64>().unwrap_or(0);
+        }
+    }
+    let digits: String = s.chars().filter(|c| c.is_ascii_digit()).collect();
     digits.parse::<i64>().unwrap_or(0)
 }
