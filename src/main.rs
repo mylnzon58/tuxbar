@@ -408,18 +408,21 @@ fn run_daemon(card_path: &str, input_path: &str) -> Result<()> {
                                         }
                                     }
                                     WidgetAction::PlayPause => {
+                                        println!("[TuxBar] Media Action: Play/Pause triggered");
                                         mpris.play_pause();
                                         if let Some(ref mut vk) = virtual_kbd {
                                             let _ = vk.click_key(evdev::Key::KEY_PLAYPAUSE);
                                         }
                                     }
                                     WidgetAction::NextTrack => {
+                                        println!("[TuxBar] Media Action: Next Track triggered");
                                         mpris.next();
                                         if let Some(ref mut vk) = virtual_kbd {
                                             let _ = vk.click_key(evdev::Key::KEY_NEXTSONG);
                                         }
                                     }
                                     WidgetAction::PreviousTrack => {
+                                        println!("[TuxBar] Media Action: Previous Track triggered");
                                         mpris.previous();
                                         if let Some(ref mut vk) = virtual_kbd {
                                             let _ = vk.click_key(evdev::Key::KEY_PREVIOUSSONG);
@@ -456,18 +459,21 @@ fn run_daemon(card_path: &str, input_path: &str) -> Result<()> {
                                         }
                                     }
                                     WidgetAction::PlayPause => {
+                                        println!("[TuxBar] Media Action: Play/Pause triggered");
                                         mpris.play_pause();
                                         if let Some(ref mut vk) = virtual_kbd {
                                             let _ = vk.click_key(evdev::Key::KEY_PLAYPAUSE);
                                         }
                                     }
                                     WidgetAction::NextTrack => {
+                                        println!("[TuxBar] Media Action: Next Track triggered");
                                         mpris.next();
                                         if let Some(ref mut vk) = virtual_kbd {
                                             let _ = vk.click_key(evdev::Key::KEY_NEXTSONG);
                                         }
                                     }
                                     WidgetAction::PreviousTrack => {
+                                        println!("[TuxBar] Media Action: Previous Track triggered");
                                         mpris.previous();
                                         if let Some(ref mut vk) = virtual_kbd {
                                             let _ = vk.click_key(evdev::Key::KEY_PREVIOUSSONG);

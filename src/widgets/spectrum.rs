@@ -96,17 +96,18 @@ impl Widget for SpectrumVisualizerWidget {
                 let seg_rect = Rect::new(bar_x, seg_y, bar_width, seg_height);
 
                 let color = if seg < active_segs {
-                    // Segment gradient: Bottom Cyan -> Mid Magenta -> Top Pink
-                    if seg < 4 {
-                        Color::CYAN
-                    } else if seg < 7 {
-                        Color::MAGENTA
-                    } else {
-                        Color::PINK
+                    // Studio-grade VU Heatmap Gradient: Electric Cyan -> Neon Green -> Cyber Lime -> Golden Amber -> High-power Orange -> Peak Crimson Red
+                    match seg {
+                        0..=1 => Color::rgb(0, 230, 255),    // Sub-bass floor: Deep electric cyan
+                        2..=3 => Color::rgb(0, 255, 150),    // Low-mid: Vivid neon spring green
+                        4..=5 => Color::rgb(140, 255, 0),    // Mid-range: Bright cyber lime
+                        6..=7 => Color::rgb(255, 215, 0),    // Upper-mid: Rich amber gold
+                        8 => Color::rgb(255, 106, 0),        // High power: Hot electric orange
+                        _ => Color::rgb(255, 20, 80),         // Peak ceiling: Vibrant crimson red
                     }
                 } else {
                     // Inactive segment slot
-                    Color::rgba(255, 255, 255, 12)
+                    Color::rgba(255, 255, 255, 10)
                 };
 
                 fb.fill_rect(seg_rect, color);
@@ -117,16 +118,30 @@ impl Widget for SpectrumVisualizerWidget {
                 let peak_seg = (peak * (segments - 1) as f32).round() as u32;
                 let peak_y = area.y + area.height as i32 - padding_y as i32 - ((peak_seg + 1) * (seg_height + seg_gap)) as i32;
                 let peak_rect = Rect::new(bar_x, peak_y, bar_width, 2);
-                fb.fill_rect(peak_rect, Color::WHITE);
+                let peak_color = if peak_seg >= 8 {
+                    Color::rgb(255, 30, 90)  // Crimson peak indicator
+                } else if peak_seg >= 6 {
+                    Color::rgb(255, 220, 0)  // Golden amber peak
+                } else {
+                    Color::WHITE             // Pure white peak
+                };
+                fb.fill_rect(peak_rect, peak_color);
             }
         }
 
-        // Draw live decibels indicator badge if active
+        // Draw live decibels indicator badge if active with dynamic power color
         if !self.is_silent && self.current_db > -70.0 {
             let db_text = format!("{:.0} dB", self.current_db);
+            let db_color = if self.current_db > -10.0 {
+                Color::rgb(255, 40, 70)  // High power peak clipping (Red)
+            } else if self.current_db > -22.0 {
+                Color::rgb(255, 210, 0)  // Punchy dynamic level (Amber Gold)
+            } else {
+                Color::CYAN              // Normal clean listening level (Cyan)
+            };
             let tw = font.measure_text_width(&db_text, 14.0);
             let tx = area.x + area.width as i32 - tw as i32 - 12;
-            fb.draw_text(font, &db_text, tx, area.y + 20, 14.0, Color::CYAN);
+            fb.draw_text(font, &db_text, tx, area.y + 20, 14.0, db_color);
         }
     }
 

@@ -199,38 +199,76 @@ impl MprisClient {
     }
 
     pub fn play_pause(&self) {
-        if let (Some(conn), Some(bus)) = (&self.conn, &self.active_bus_name) {
-            let _ = conn.call_method(
-                Some(bus.as_str()),
-                "/org/mpris/MediaPlayer2",
-                Some("org.mpris.MediaPlayer2.Player"),
-                "PlayPause",
-                &(),
-            );
+        if let Some(conn) = &self.conn {
+            let mut sent = false;
+            if let Some(bus) = &self.active_bus_name {
+                let _ = conn.call_method(
+                    Some(bus.as_str()),
+                    "/org/mpris/MediaPlayer2",
+                    Some("org.mpris.MediaPlayer2.Player"),
+                    "PlayPause",
+                    &(),
+                );
+                sent = true;
+            }
+            if !sent {
+                self.broadcast_method("PlayPause");
+            }
         }
     }
 
     pub fn next(&self) {
-        if let (Some(conn), Some(bus)) = (&self.conn, &self.active_bus_name) {
-            let _ = conn.call_method(
-                Some(bus.as_str()),
-                "/org/mpris/MediaPlayer2",
-                Some("org.mpris.MediaPlayer2.Player"),
-                "Next",
-                &(),
-            );
+        if let Some(conn) = &self.conn {
+            if let Some(bus) = &self.active_bus_name {
+                let _ = conn.call_method(
+                    Some(bus.as_str()),
+                    "/org/mpris/MediaPlayer2",
+                    Some("org.mpris.MediaPlayer2.Player"),
+                    "Next",
+                    &(),
+                );
+            }
+            self.broadcast_method("Next");
         }
     }
 
     pub fn previous(&self) {
-        if let (Some(conn), Some(bus)) = (&self.conn, &self.active_bus_name) {
-            let _ = conn.call_method(
-                Some(bus.as_str()),
-                "/org/mpris/MediaPlayer2",
-                Some("org.mpris.MediaPlayer2.Player"),
-                "Previous",
-                &(),
-            );
+        if let Some(conn) = &self.conn {
+            if let Some(bus) = &self.active_bus_name {
+                let _ = conn.call_method(
+                    Some(bus.as_str()),
+                    "/org/mpris/MediaPlayer2",
+                    Some("org.mpris.MediaPlayer2.Player"),
+                    "Previous",
+                    &(),
+                );
+            }
+            self.broadcast_method("Previous");
+        }
+    }
+
+    fn broadcast_method(&self, method: &str) {
+        let Some(conn) = &self.conn else { return };
+        if let Ok(reply) = conn.call_method(
+            Some("org.freedesktop.DBus"),
+            "/org/freedesktop/DBus",
+            Some("org.freedesktop.DBus"),
+            "ListNames",
+            &(),
+        ) {
+            if let Ok(names) = reply.body().deserialize::<Vec<String>>() {
+                for n in names {
+                    if n.starts_with("org.mpris.MediaPlayer2.") {
+                        let _ = conn.call_method(
+                            Some(n.as_str()),
+                            "/org/mpris/MediaPlayer2",
+                            Some("org.mpris.MediaPlayer2.Player"),
+                            method,
+                            &(),
+                        );
+                    }
+                }
+            }
         }
     }
 }

@@ -32,6 +32,7 @@ pub struct Color {
     pub a: u8,
 }
 
+#[allow(dead_code)]
 impl Color {
     #[must_use]
     pub const fn rgb(r: u8, g: u8, b: u8) -> Self {

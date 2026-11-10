@@ -1,14 +1,15 @@
-//! Touch Bar Image Viewer & Filmstrip Scrubber Widget
-//! Re-creates the iconic macOS Touch Bar Photo Scrubber in 100% pure Rust for Linux.
-//! Ergonomically optimized to take advantage of the full 60px height of the Touch Bar.
-
-use std::fs;
-use std::path::PathBuf;
-use image::RgbaImage;
+//! Real Screenshot Gallery Scrubber with Linux Desktop Opener
+//! Discovers actual screenshots in user directories (~/Pictures/Capturas de pantalla, ~/Pictures, ~/Downloads)
+//! Displays real 84x54 thumbnails, smooth kinetic touch scrolling, and instant desktop launcher.
 
 use crate::graphics::{FontEngine, Framebuffer};
 use crate::types::{Color, Rect, TouchEvent, TouchPhase, WidgetAction};
 use crate::widgets::Widget;
+use image::RgbaImage;
+use std::fs;
+use std::os::unix::process::CommandExt;
+use std::path::PathBuf;
+use std::time::Instant;
 
 pub struct PhotoItem {
     pub path: PathBuf,
@@ -21,6 +22,8 @@ pub struct GalleryWidget {
     pub selected_idx: usize,
     scroll_offset: f32,
     last_touch_x: Option<i32>,
+    last_click_time: Option<Instant>,
+    last_click_idx: Option<usize>,
 }
 
 impl GalleryWidget {
@@ -31,6 +34,8 @@ impl GalleryWidget {
             selected_idx: 0,
             scroll_offset: 0.0,
             last_touch_x: None,
+            last_click_time: None,
+            last_click_idx: None,
         };
         widget.load_from_pictures_or_fallback();
         widget
@@ -49,12 +54,11 @@ impl GalleryWidget {
 
         if let Ok(entries) = fs::read_dir("/home") {
             for entry in entries.flatten() {
-                let user_dir = entry.path();
-                if user_dir.is_dir() {
-                    dirs_to_check.push(user_dir.join("Pictures/Capturas de pantalla"));
-                    dirs_to_check.push(user_dir.join("Pictures"));
-                    dirs_to_check.push(user_dir.join("Downloads"));
-                    dirs_to_check.push(user_dir.join("Desktop"));
+                let p = entry.path();
+                if p.is_dir() {
+                    dirs_to_check.push(p.join("Pictures/Capturas de pantalla"));
+                    dirs_to_check.push(p.join("Pictures"));
+                    dirs_to_check.push(p.join("Downloads"));
                 }
             }
         }
@@ -67,20 +71,20 @@ impl GalleryWidget {
         }
 
         for dir in dirs_to_check {
-            if dir.exists() && loaded.len() < 16 {
+            if dir.exists() && loaded.len() < 24 {
                 if let Ok(entries) = fs::read_dir(&dir) {
                     let mut paths: Vec<PathBuf> = entries
                         .filter_map(|e| e.ok())
                         .map(|e| e.path())
                         .filter(|p| {
                             let ext = p.extension().and_then(|s| s.to_str()).unwrap_or("").to_lowercase();
-                            ext == "png" || ext == "jpg" || ext == "jpeg"
+                            matches!(ext.as_str(), "png" | "jpg" | "jpeg" | "webp")
                         })
                         .collect();
                     paths.sort();
                     paths.reverse(); // Most recent screenshots first
 
-                    for p in paths.into_iter().take(12) {
+                    for p in paths.into_iter().take(16) {
                         if let Ok(img) = image::open(&p) {
                             // Resize to 84x54 thumbnail
                             let thumb = img.thumbnail_exact(84, 54).to_rgba8();
@@ -147,18 +151,31 @@ impl GalleryWidget {
     pub fn open_selected(&self) {
         if let Some(item) = self.photos.get(self.selected_idx) {
             if item.path.exists() {
-                let path_str = item.path.to_string_lossy();
-                let user = std::env::var("SUDO_USER").unwrap_or_else(|_| "zeeroj".to_string());
-                let cmd = format!(
-                    "XDG_RUNTIME_DIR=/run/user/1000 WAYLAND_DISPLAY=wayland-0 DISPLAY=:0 DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus xdg-open \"{}\" 2>/dev/null &",
-                    path_str
-                );
-                let _ = std::process::Command::new("su")
-                    .args(["-", &user, "-c", &cmd])
+                let path_str = item.path.to_string_lossy().to_string();
+                println!("[TuxBar] Launching image viewer for: {}", path_str);
+
+                // Direct kernel setuid(1000) execution without PAM or auth prompts
+                let res = std::process::Command::new("gio")
+                    .args(["open", &path_str])
+                    .uid(1000)
+                    .gid(1000)
+                    .env("XDG_RUNTIME_DIR", "/run/user/1000")
+                    .env("DBUS_SESSION_BUS_ADDRESS", "unix:path=/run/user/1000/bus")
+                    .env("WAYLAND_DISPLAY", "wayland-0")
+                    .env("DISPLAY", ":0")
                     .spawn();
-                let _ = std::process::Command::new("xdg-open")
-                    .arg(&item.path)
-                    .spawn();
+
+                if res.is_err() {
+                    let _ = std::process::Command::new("xdg-open")
+                        .arg(&path_str)
+                        .uid(1000)
+                        .gid(1000)
+                        .env("XDG_RUNTIME_DIR", "/run/user/1000")
+                        .env("DBUS_SESSION_BUS_ADDRESS", "unix:path=/run/user/1000/bus")
+                        .env("WAYLAND_DISPLAY", "wayland-0")
+                        .env("DISPLAY", ":0")
+                        .spawn();
+                }
             }
         }
     }
@@ -180,7 +197,7 @@ impl Widget for GalleryWidget {
         fb.draw_text(font, "◀", cur_x + (prev_w as i32 - prev_tw as i32) / 2, btn_y + 38, 22.0, Color::WHITE);
         cur_x += prev_w as i32 + 6;
 
-        let open_w = 110;
+        let open_w = 100;
         let open_rect = Rect::new(cur_x, btn_y, open_w, btn_h);
         fb.draw_rounded_rect(open_rect, 6, Color::ACCENT);
         let open_tw = font.measure_text_width("ABRIR", 20.0);
@@ -192,19 +209,23 @@ impl Widget for GalleryWidget {
         fb.draw_rounded_rect(next_rect, 6, Color::rgb(35, 42, 54));
         let next_tw = font.measure_text_width("▶", 22.0);
         fb.draw_text(font, "▶", cur_x + (next_w as i32 - next_tw as i32) / 2, btn_y + 38, 22.0, Color::WHITE);
-        cur_x += next_w as i32 + 12;
+        cur_x += next_w as i32 + 10;
 
-        // 2. Active photo info badge
+        // 2. Active photo info badge card (Enclosed capsule preventing collision with thumbnails)
+        let badge_w = 200u32;
+        let badge_rect = Rect::new(cur_x, btn_y, badge_w, btn_h);
+        fb.draw_rounded_rect(badge_rect, 6, Color::rgb(22, 28, 38));
+
         if let Some(item) = self.photos.get(self.selected_idx) {
-            let info_str = format!("{}/{} · {}", self.selected_idx + 1, self.photos.len(), item.name);
-            let display_name = if info_str.len() > 18 {
-                format!("{}...", &info_str[..16])
-            } else {
-                info_str
-            };
-            fb.draw_text(font, &display_name, cur_x, btn_y + 38, 18.0, Color::WHITE);
-            cur_x += 160;
+            let counter_text = format!("{}/{}", self.selected_idx + 1, self.photos.len());
+            fb.draw_text(font, &counter_text, cur_x + 8, btn_y + 20, 13.0, Color::CYAN);
+
+            let max_text_x = cur_x + badge_w as i32 - 8;
+            fb.draw_text_clipped(font, &item.name, cur_x + 8, btn_y + 42, 16.0, Color::WHITE, max_text_x);
+        } else {
+            fb.draw_text(font, "Sin fotos", cur_x + 12, btn_y + 36, 16.0, Color::GRAY);
         }
+        cur_x += badge_w as i32 + 12;
 
         // 3. Horizontal Filmstrip Thumbnails
         let filmstrip_x = cur_x;
@@ -246,10 +267,10 @@ impl Widget for GalleryWidget {
 
                 let prev_rect = Rect::new(cur_x, btn_y, 64 + 4, btn_h);
                 cur_x += 64 + 6;
-                let open_rect = Rect::new(cur_x, btn_y, 110 + 4, btn_h);
-                cur_x += 110 + 6;
+                let open_rect = Rect::new(cur_x, btn_y, 100 + 4, btn_h);
+                cur_x += 100 + 6;
                 let next_rect = Rect::new(cur_x, btn_y, 64 + 4, btn_h);
-                cur_x += 64 + 12;
+                cur_x += 64 + 10;
 
                 if prev_rect.contains(px, py) {
                     self.select_prev();
@@ -264,17 +285,30 @@ impl Widget for GalleryWidget {
                     return WidgetAction::None;
                 }
 
-                // Check click directly on filmstrip thumbnails
-                let filmstrip_x = cur_x + 160;
+                // Skip photo badge card
+                let badge_w = 200;
+                cur_x += badge_w + 12;
+
+                // Check click or double-tap directly on filmstrip thumbnails
+                let filmstrip_x = cur_x;
                 if px >= filmstrip_x {
                     let thumb_stride = 84 + 8;
                     let clicked_offset = (px - filmstrip_x) + self.scroll_offset as i32;
                     let clicked_idx = (clicked_offset / thumb_stride) as usize;
                     if clicked_idx < self.photos.len() {
-                        if clicked_idx == self.selected_idx {
-                            self.open_selected();
+                        let now = Instant::now();
+                        let is_double_tap = if let (Some(last_t), Some(last_i)) = (self.last_click_time, self.last_click_idx) {
+                            last_i == clicked_idx && now.duration_since(last_t).as_millis() < 500
                         } else {
-                            self.selected_idx = clicked_idx;
+                            false
+                        };
+
+                        self.last_click_time = Some(now);
+                        self.last_click_idx = Some(clicked_idx);
+                        self.selected_idx = clicked_idx;
+
+                        if is_double_tap {
+                            self.open_selected();
                         }
                     }
                 }

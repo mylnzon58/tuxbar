@@ -118,31 +118,31 @@ impl Widget for NowPlayingWidget {
 
         let btn_h = area.height;
         let btn_y = area.y;
-        let mut cur_x = area.x;
+        let mut cur_x = area.x + 2;
 
         // Esc key hit
-        let esc_rect = Rect::new(cur_x, btn_y, 96 + 4, btn_h);
+        let esc_rect = Rect::new(cur_x, btn_y, 96, btn_h);
         if esc_rect.contains(event.x as i32, event.y as i32) {
             return WidgetAction::Escape;
         }
         cur_x += 96 + 6;
 
         // Prev key hit
-        let prev_rect = Rect::new(cur_x, btn_y, 76 + 4, btn_h);
+        let prev_rect = Rect::new(cur_x, btn_y, 76, btn_h);
         if prev_rect.contains(event.x as i32, event.y as i32) {
             return WidgetAction::PreviousTrack;
         }
         cur_x += 76 + 6;
 
         // Play key hit
-        let play_rect = Rect::new(cur_x, btn_y, 88 + 4, btn_h);
+        let play_rect = Rect::new(cur_x, btn_y, 88, btn_h);
         if play_rect.contains(event.x as i32, event.y as i32) {
             return WidgetAction::PlayPause;
         }
         cur_x += 88 + 6;
 
         // Next key hit
-        let next_rect = Rect::new(cur_x, btn_y, 76 + 4, btn_h);
+        let next_rect = Rect::new(cur_x, btn_y, 76, btn_h);
         if next_rect.contains(event.x as i32, event.y as i32) {
             return WidgetAction::NextTrack;
         }

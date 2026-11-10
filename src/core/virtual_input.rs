@@ -44,9 +44,12 @@ impl VirtualKeyboard {
     pub fn click_key(&mut self, key: Key) -> Result<()> {
         let down = InputEvent::new(EventType::KEY, key.code(), 1);
         let syn1 = InputEvent::new(EventType::SYNCHRONIZATION, 0, 0);
+        self.device.emit(&[down, syn1])?;
+        // 25ms realistic hold time so Wayland and browser media dispatchers register the keystroke
+        std::thread::sleep(std::time::Duration::from_millis(25));
         let up = InputEvent::new(EventType::KEY, key.code(), 0);
         let syn2 = InputEvent::new(EventType::SYNCHRONIZATION, 0, 0);
-        self.device.emit(&[down, syn1, up, syn2])?;
+        self.device.emit(&[up, syn2])?;
         Ok(())
     }
 }
