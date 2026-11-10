@@ -111,12 +111,12 @@ TuxBar fue diseñado bajo estrictos estándares de ingeniería de software para 
 
 ---
 
-## 🍏 Integración con el Ecosistema T2 Linux
+## 🍏 Compatibilidad con Hardware Apple T2
 
-TuxBar ha sido diseñado pensando en la comunidad de usuarios y mantenedores de Ubuntu en laptops Apple T2 ([t2linux](https://t2linux.org/) / [AdityaGarg8](https://github.com/AdityaGarg8/t2-ubuntu-repo)):
+TuxBar ha sido diseñado para cualquier usuario de Linux en laptops Apple con chip de seguridad T2:
 
 1. **Coexistencia Pacífica:** La unidad de servicio `tuxbar.service` declara `Conflicts=tiny-dfr.service`. Nunca habrá dos procesos intentando adquirir el dumb buffer DRM simultáneamente.
-2. **Empaquetado Estándar:** El paquete `.deb` generado con `package_deb.sh` sigue la jerarquía Filesystem Hierarchy Standard (FHS) de Debian/Ubuntu y puede ser añadido directamente a los repositorios APT de T2 Linux (`t2-ubuntu-repo`).
+2. **Empaquetado Estándar:** El paquete `.deb` generado con `package_deb.sh` sigue la jerarquía Filesystem Hierarchy Standard (FHS) de Debian/Ubuntu y se instala limpiamente en cualquier distribución basada en Ubuntu/Debian.
 3. **Soporte de Modelos:** Compatible con cualquier laptop Apple con Touch Bar reconocida por el kernel: MacBookPro15,1 / 15,2 / 16,1 / 16,2 / 16,3 / 16,4.
 
 ---
