@@ -118,3 +118,4 @@ impl Widget for SpectrumVisualizerWidget {
         WidgetAction::PlayPause
     }
 }
+

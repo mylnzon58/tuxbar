@@ -133,3 +133,4 @@ impl Widget for CyberdeckWidget {
         WidgetAction::ToggleMode
     }
 }
+

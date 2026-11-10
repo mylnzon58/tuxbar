@@ -22,6 +22,7 @@ use crate::services::{MprisClient, TelemetryProvider};
 use crate::types::{ActiveTouch, BarMode, Color, Rect, TouchPhase, WidgetAction};
 use crate::widgets::clock::ClockWidget;
 use crate::widgets::cyberdeck::CyberdeckWidget;
+use crate::widgets::gallery::GalleryWidget;
 use crate::widgets::now_playing::NowPlayingWidget;
 use crate::widgets::spectrum::SpectrumVisualizerWidget;
 use crate::widgets::system_stats::SystemStatsWidget;
@@ -204,6 +205,17 @@ fn run_preview(prefix: &str) -> Result<()> {
     fb.save_ppm(&path_pro)?;
     println!("[TuxBar] Saved {}", path_pro);
 
+    // 4. Preview Gallery Scrubber
+    fb.clear(Color::BLACK);
+    let gallery_rect = Rect::new(4, 2, 1596, 56);
+    let gallery = GalleryWidget::new();
+    gallery.render(&mut fb, gallery_rect, &font);
+    render_mode_button(&mut fb, mode_btn_rect, BarMode::Gallery, &font);
+    clock_widget.render(&mut fb, clock_rect, &font);
+    let path_gallery = format!("{prefix}_gallery.ppm");
+    fb.save_ppm(&path_gallery)?;
+    println!("[TuxBar] Saved {}", path_gallery);
+
     println!("[TuxBar] Frame preview export complete ✓");
     Ok(())
 }
@@ -253,6 +265,7 @@ fn run_daemon(card_path: &str, input_path: &str) -> Result<()> {
     let mut now_playing = NowPlayingWidget::new();
     let mut spectrum = SpectrumVisualizerWidget::new();
     let mut cyberdeck = CyberdeckWidget::new();
+    let mut gallery = GalleryWidget::new();
     let mut stats_widget = SystemStatsWidget::new();
     let mut clock_widget = ClockWidget;
 
@@ -321,6 +334,12 @@ fn run_daemon(card_path: &str, input_path: &str) -> Result<()> {
                                 }
                             }
                         }
+                        BarMode::Gallery => {
+                            let gallery_rect = Rect::new(4, 2, 1596, 56);
+                            if gallery_rect.contains(px, py) {
+                                let _ = gallery.handle_touch(&event, gallery_rect);
+                            }
+                        }
                     }
 
                     if clock_rect.contains(px, py) {
@@ -368,6 +387,10 @@ fn run_daemon(card_path: &str, input_path: &str) -> Result<()> {
                 now_playing.render(&mut fb, pro_media, &font);
                 spectrum.render(&mut fb, pro_spec, &font);
                 stats_widget.render(&mut fb, pro_stats, &font);
+            }
+            BarMode::Gallery => {
+                let gallery_rect = Rect::new(4, 2, 1596, 56);
+                gallery.render(&mut fb, gallery_rect, &font);
             }
         }
 

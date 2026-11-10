@@ -25,15 +25,19 @@ Hasta hoy, usar Linux en una MacBook Pro con Touch Bar significaba conformarse c
 ![TuxBar Cyberdeck Mode](assets/tuxbar_cyberdeck_preview.png)
 *Modo Cyberdeck: Matriz de carga CPU hilo por hilo (12 núcleos), RAM, temperatura y pulso de kernel.*
 
+![TuxBar Gallery Photo Scrubber Mode](assets/tuxbar_gallery_preview.png)
+*Modo Gallery: Visor y Scrubber de imágenes y capturas táctil (como en macOS Photos).*
+
 ![TuxBar Pro Split Mode](assets/tuxbar_prosplit_preview.png)
 *Modo Pro Split: Vista balanceada con música, mini-espectro, telemetría y reloj tipográfico.*
 
-1. 🎵 **Modo Audiophile (Ecualizador de Frecuencias en Vivo):** Integra un ecualizador dinámico de 32 bandas con degradado tricolor neón (Cyan base -> Magenta medio -> Rosa picos) y retención de picos (*peak-hold*), reproductor MPRIS (Spotify, Chrome, Firefox, VLC) con desplazamiento *marquee* y controles táctiles directos (`◀◀`, `▶/❚❚`, `▶▶`).
-2. ⚡ **Modo Cyberdeck (Matriz de Silicio en Tiempo Real):** Muestra el nivel de carga individual de cada uno de los núcleos lógicos del procesador (hasta 16 hilos) mediante medidores verticales estilo LED, temperatura del silicio en °C, uso de RAM y monitor de latido del kernel.
-3. ⏱️ **Modo Pro Split (Productividad Equilibrada):** Combina el reproductor musical con medidor de espectro compacto, telemetría esencial de hardware y reloj tipográfico de alta definición.
-4. ✨ **Respuesta Táctil Visual (Luminous Touch Glow):** Al posar el dedo sobre la pantalla OLED, un halo de luz neón sigue las coordenadas exactas de la pulsación sobre el cristal.
-5. 🔄 **Selector de Modos al Tacto:** Botón interactivo `[ MODE ]` directo en la Touch Bar que conmuta en caliente entre los 3 modos.
-6. 🔀 **Conmutación Instantánea (`tuxbar-toggle`):** Alterna al instante entre TuxBar y el teclado tradicional (`tiny-dfr`) sin reiniciar la laptop.
+1. 📷 **Modo Gallery (Photo Scrubber de Imágenes & Capturas):** Replica la función icónica de macOS Photos en Linux. Renderiza una tira de película (*filmstrip*) horizontal de fotos y capturas reales con bordes redondeados; permite deslizar el dedo sobre la Touch Bar para explorar miniaturas a 30 FPS y tocar `[ OPEN ]` para ver la imagen a resolución completa en el monitor principal.
+2. 🎵 **Modo Audiophile (Ecualizador de Frecuencias en Vivo):** Integra un ecualizador dinámico de 32 bandas con degradado tricolor neón (Cyan base -> Magenta medio -> Rosa picos) y retención de picos (*peak-hold*), reproductor MPRIS (Spotify, Chrome, Firefox, VLC) con desplazamiento *marquee* y controles táctiles directos (`◀◀`, `▶/❚❚`, `▶▶`).
+3. ⚡ **Modo Cyberdeck (Matriz de Silicio en Tiempo Real):** Muestra el nivel de carga individual de cada uno de los núcleos lógicos del procesador (hasta 16 hilos) mediante medidores verticales estilo LED, temperatura del silicio en °C, uso de RAM y monitor de latido del kernel.
+4. ⏱️ **Modo Pro Split (Productividad Equilibrada):** Combina el reproductor musical con medidor de espectro compacto, telemetría esencial de hardware y reloj tipográfico de alta definición.
+5. ✨ **Respuesta Táctil Visual (Luminous Touch Glow):** Al posar el dedo sobre la pantalla OLED, un halo de luz neón sigue las coordenadas exactas de la pulsación sobre el cristal.
+6. 🔄 **Selector de Modos al Tacto:** Botón interactivo `[ MODE ]` directo en la Touch Bar que conmuta en caliente entre los 4 modos.
+7. 🔀 **Conmutación Instantánea (`tuxbar-toggle`):** Alterna al instante entre TuxBar y el teclado tradicional (`tiny-dfr`) sin reiniciar la laptop.
 
 ---
 

@@ -1,5 +1,6 @@
 pub mod clock;
 pub mod cyberdeck;
+pub mod gallery;
 pub mod now_playing;
 pub mod spectrum;
 pub mod system_stats;

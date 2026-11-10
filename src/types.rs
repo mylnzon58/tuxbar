@@ -74,6 +74,7 @@ pub enum BarMode {
     ProSplit,
     Audiophile,
     Cyberdeck,
+    Gallery,
 }
 
 impl BarMode {
@@ -82,7 +83,8 @@ impl BarMode {
         match self {
             Self::ProSplit => Self::Audiophile,
             Self::Audiophile => Self::Cyberdeck,
-            Self::Cyberdeck => Self::ProSplit,
+            Self::Cyberdeck => Self::Gallery,
+            Self::Gallery => Self::ProSplit,
         }
     }
 
@@ -92,6 +94,7 @@ impl BarMode {
             Self::ProSplit => "PRO SPLIT",
             Self::Audiophile => "AUDIOPHILE",
             Self::Cyberdeck => "CYBERDECK",
+            Self::Gallery => "GALLERY",
         }
     }
 }

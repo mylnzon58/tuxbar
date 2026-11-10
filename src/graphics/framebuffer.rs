@@ -155,6 +155,60 @@ impl Framebuffer {
         }
     }
 
+    pub fn draw_image(
+        &mut self,
+        img: &image::RgbaImage,
+        dest_x: i32,
+        dest_y: i32,
+        target_w: u32,
+        target_h: u32,
+        radius: i32,
+    ) {
+        let src_w = img.width();
+        let src_h = img.height();
+        if src_w == 0 || src_h == 0 || target_w == 0 || target_h == 0 {
+            return;
+        }
+
+        let r2 = radius * radius;
+
+        for ty in 0..target_h {
+            let dy = dest_y + ty as i32;
+            if dy < 0 || dy >= self.height as i32 {
+                continue;
+            }
+            let sy = (ty * src_h) / target_h;
+
+            for tx in 0..target_w {
+                let dx = dest_x + tx as i32;
+                if dx < 0 || dx >= self.width as i32 {
+                    continue;
+                }
+
+                if radius > 0 {
+                    let dx_left = tx as i32 - radius;
+                    let dx_right = tx as i32 - (target_w as i32 - 1 - radius);
+                    let dy_top = ty as i32 - radius;
+                    let dy_bottom = ty as i32 - (target_h as i32 - 1 - radius);
+
+                    let is_corner = (dx_left < 0 && dy_top < 0 && (dx_left * dx_left + dy_top * dy_top > r2))
+                        || (dx_right > 0 && dy_top < 0 && (dx_right * dx_right + dy_top * dy_top > r2))
+                        || (dx_left < 0 && dy_bottom > 0 && (dx_left * dx_left + dy_bottom * dy_bottom > r2))
+                        || (dx_right > 0 && dy_bottom > 0 && (dx_right * dx_right + dy_bottom * dy_bottom > r2));
+
+                    if is_corner {
+                        continue;
+                    }
+                }
+
+                let sx = (tx * src_w) / target_w;
+                let pixel = img.get_pixel(sx, sy);
+                let color = Color::rgba(pixel[0], pixel[1], pixel[2], pixel[3]);
+                self.set_pixel(dx, dy, color);
+            }
+        }
+    }
+
     pub fn save_ppm<P: AsRef<std::path::Path>>(&self, path: P) -> std::io::Result<()> {
         use std::io::Write;
         let mut file = std::fs::File::create(path)?;
