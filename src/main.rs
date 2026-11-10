@@ -210,13 +210,13 @@ fn run_daemon(card_path: &str, input_path: &str) -> Result<()> {
         }
 
         // 2. Refresh dynamic data
-        if frame_count % 15 == 0 {
+        if frame_count.is_multiple_of(15) {
             // Check MPRIS every 500ms
             let track = mpris.update();
             now_playing.update_info(track.clone());
         }
 
-        if frame_count % 30 == 0 {
+        if frame_count.is_multiple_of(30) {
             // Check CPU/Temp/RAM every 1000ms
             let stats = telemetry.refresh();
             stats_widget.update_stats(*stats);
