@@ -26,11 +26,25 @@ fi
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# 1. Compilar binario de alto rendimiento
-echo -e "\n${CYAN}[1/4] Compilando binario optimizado en Rust (cargo release)...${NC}"
-cd "$SCRIPT_DIR"
-cargo build --release
-echo -e "${GREEN}[✓] Binario TuxBar verificado y compilado con éxito.${NC}"
+# 1. Verificar o compilar binario optimizado
+echo -e "\n${CYAN}[1/4] Verificando binario TuxBar compilado en Rust...${NC}"
+if [ ! -f "$SCRIPT_DIR/target/release/tuxbar" ]; then
+    CARGO_BIN="$(command -v cargo 2>/dev/null || true)"
+    if [ -z "$CARGO_BIN" ] && [ -n "$SUDO_USER" ]; then
+        USER_HOME=$(getent passwd "$SUDO_USER" | cut -d: -f6)
+        if [ -x "$USER_HOME/.cargo/bin/cargo" ]; then
+            CARGO_BIN="$USER_HOME/.cargo/bin/cargo"
+        fi
+    fi
+    if [ -n "$CARGO_BIN" ]; then
+        echo -e "Compilando binario con $CARGO_BIN..."
+        cd "$SCRIPT_DIR" && "$CARGO_BIN" build --release
+    else
+        echo -e "${RED}[X] Error: target/release/tuxbar no existe y no se encontró cargo.${NC}"
+        exit 1
+    fi
+fi
+echo -e "${GREEN}[✓] Binario TuxBar verificado con éxito (${SCRIPT_DIR}/target/release/tuxbar).${NC}"
 
 # 2. Instalar binario en /usr/local/bin (deteniendo instancias previas limpiamente)
 echo -e "\n${CYAN}[2/4] Instalando ejecutable en /usr/local/bin...${NC}"
@@ -38,7 +52,7 @@ systemctl kill -s SIGKILL tuxbar.service 2>/dev/null || true
 pkill -9 -x tuxbar 2>/dev/null || true
 systemctl stop tuxbar.service 2>/dev/null || true
 install -m 755 "$SCRIPT_DIR/target/release/tuxbar" /usr/local/bin/tuxbar
-echo -e "${GREEN}[✓] Ejecutable instalado.${NC}"
+echo -e "${GREEN}[✓] Ejecutable TuxBar instalado correctamente en /usr/local/bin/tuxbar.${NC}"
 
 # 3. Crear script de conmutación instantánea (tuxbar-toggle)
 echo -e "\n${CYAN}[3/4] Instalando conmutador rápido 'tuxbar-toggle'...${NC}"
@@ -74,7 +88,7 @@ systemctl daemon-reload
 systemctl stop tiny-dfr.service 2>/dev/null || true
 systemctl enable tuxbar.service 2>/dev/null || true
 systemctl restart tuxbar.service
-echo -e "${GREEN}[✓] TuxBar activado automáticamente en la Touch Bar.${NC}"
+echo -e "${GREEN}[✓] ¡TuxBar v0.2.0 activado en la Touch Bar!${NC}"
 
 echo -e "\n${GREEN}==========================================================================${NC}"
 echo -e " ${GREEN}✓ ¡Instalación de TuxBar completada con éxito!${NC}"
