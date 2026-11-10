@@ -69,8 +69,11 @@ cat << 'EOF' > "$PKG_DIR/DEBIAN/postinst"
 #!/bin/sh
 set -e
 systemctl daemon-reload
-echo "[TuxBar] Instalación completada con éxito."
-echo "[TuxBar] Ejecute 'sudo tuxbar-toggle' para activar los widgets dinámicos en la Touch Bar."
+echo "[TuxBar] Activando TuxBar en la Touch Bar de forma inmediata..."
+systemctl stop tiny-dfr.service 2>/dev/null || true
+systemctl enable --now tuxbar.service 2>/dev/null || true
+echo "[TuxBar] ¡TuxBar ha sido instalado y activado en tu Touch Bar!"
+echo "[TuxBar] Usa 'sudo tuxbar-toggle' cuando quieras alternar entre widgets y teclas F1-F12."
 exit 0
 EOF
 chmod 755 "$PKG_DIR/DEBIAN/postinst"
@@ -93,3 +96,4 @@ rm -rf "$PKG_DIR"
 echo "=== [4/4] Paquete .deb generado con éxito ==="
 ls -lh "$DEB_FILE"
 echo "Para instalar: sudo apt install ./dist/tuxbar_0.1.0_amd64.deb (o doble clic)"
+

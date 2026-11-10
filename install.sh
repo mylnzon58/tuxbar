@@ -65,10 +65,13 @@ fi
 EOF
 chmod 755 /usr/local/bin/tuxbar-toggle
 
-# 4. Configurar servicio systemd
-echo -e "\n${CYAN}[4/4] Configurando servicio del sistema tuxbar.service...${NC}"
+# 4. Configurar servicio systemd y activar inmediatamente
+echo -e "\n${CYAN}[4/4] Configurando y activando TuxBar en la Touch Bar de inmediato...${NC}"
 install -m 644 "$SCRIPT_DIR/tuxbar.service" /etc/systemd/system/tuxbar.service
 systemctl daemon-reload
+systemctl stop tiny-dfr.service 2>/dev/null || true
+systemctl enable --now tuxbar.service 2>/dev/null || true
+echo -e "${GREEN}[✓] TuxBar activado automáticamente en la Touch Bar.${NC}"
 
 echo -e "\n${GREEN}==========================================================================${NC}"
 echo -e " ${GREEN}✓ ¡Instalación de TuxBar completada con éxito!${NC}"
