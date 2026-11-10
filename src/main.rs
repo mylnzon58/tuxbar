@@ -242,6 +242,16 @@ fn run_daemon(card_path: &str, input_path: &str) -> Result<()> {
     let font = FontEngine::new().map_err(|e| anyhow::anyhow!(e))?;
     let mut fb = Framebuffer::new();
 
+    // Ensure Touch Bar backlight is powered on
+    if let Ok(mut f) = std::fs::OpenOptions::new().write(true).open("/sys/class/backlight/appletb_backlight/brightness") {
+        use std::io::Write;
+        let _ = writeln!(f, "2");
+    }
+    if let Ok(mut f) = std::fs::OpenOptions::new().write(true).open("/sys/class/backlight/appletb_backlight/bl_power") {
+        use std::io::Write;
+        let _ = writeln!(f, "0");
+    }
+
     // Open DRM backend
     let mut drm = DrmBackend::open_touchbar(Path::new(card_path))?;
     println!("[TuxBar] DRM display hardware attached successfully.");

@@ -208,14 +208,13 @@ impl DrmBackend {
         let landscape_h = 60usize;
 
         // Transpose landscape 2008x60 into hardware portrait buffer 64x2008
-        // User x in 0..2008 maps to hw row x (or 2007 - x)
-        // User y in 0..60 maps to hw col y
+        // User lx in 0..2008 maps to hardware row lx
+        // User ly in 0..60 maps to hardware column (59 - ly)
         for ly in 0..landscape_h {
+            let hw_col = 59 - ly;
             for lx in 0..landscape_w {
                 let pixel = landscape_pixels[ly * landscape_w + lx];
-                // In hardware orientation: row is (2007 - lx), col is ly
-                let hw_row = 2007 - lx;
-                let hw_col = ly;
+                let hw_row = lx;
                 let idx = hw_row * hw_stride + hw_col;
                 if idx < hw_u32.len() {
                     hw_u32[idx] = pixel;

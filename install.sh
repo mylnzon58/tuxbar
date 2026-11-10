@@ -35,8 +35,10 @@ fi
 
 echo -e "${GREEN}[✓] Binario TuxBar verificado con éxito.${NC}"
 
-# 2. Instalar binario en /usr/local/bin
+# 2. Instalar binario en /usr/local/bin (deteniendo instancias previas)
 echo -e "\n${CYAN}[2/4] Instalando ejecutable en el sistema...${NC}"
+systemctl stop tuxbar.service 2>/dev/null || true
+pkill -9 tuxbar 2>/dev/null || true
 install -m 755 "$SCRIPT_DIR/target/release/tuxbar" /usr/local/bin/tuxbar
 
 # 3. Crear script de conmutación instantánea (tuxbar-toggle)
@@ -70,7 +72,8 @@ echo -e "\n${CYAN}[4/4] Configurando y activando TuxBar en la Touch Bar de inmed
 install -m 644 "$SCRIPT_DIR/tuxbar.service" /etc/systemd/system/tuxbar.service
 systemctl daemon-reload
 systemctl stop tiny-dfr.service 2>/dev/null || true
-systemctl enable --now tuxbar.service 2>/dev/null || true
+systemctl enable tuxbar.service 2>/dev/null || true
+systemctl restart tuxbar.service
 echo -e "${GREEN}[✓] TuxBar activado automáticamente en la Touch Bar.${NC}"
 
 echo -e "\n${GREEN}==========================================================================${NC}"
