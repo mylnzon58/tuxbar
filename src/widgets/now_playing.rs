@@ -122,7 +122,7 @@ impl Widget for NowPlayingWidget {
         // Esc key hit
         let esc_rect = Rect::new(cur_x, btn_y, 96 + 4, btn_h);
         if esc_rect.contains(event.x as i32, event.y as i32) {
-            return WidgetAction::ToggleMode;
+            return WidgetAction::Escape;
         }
         cur_x += 96 + 6;
 

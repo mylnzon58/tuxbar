@@ -18,7 +18,7 @@ use std::time::Duration;
 
 use crate::core::{DrmBackend, KeyboardListener, TouchListener, VirtualKeyboard};
 use crate::graphics::{FontEngine, Framebuffer};
-use crate::services::{MprisClient, TelemetryProvider};
+use crate::services::{AudioCaptureService, MprisClient, TelemetryProvider};
 use crate::types::{ActiveTouch, BarMode, Color, Rect, TouchPhase, WidgetAction};
 use crate::widgets::clock::ClockWidget;
 use crate::widgets::cyberdeck::CyberdeckWidget;
@@ -129,6 +129,15 @@ fn run_status() -> Result<()> {
     }
     println!("   Temp:    {:.1}°C", stats.temp_c);
     println!("   RAM:     {:.1} GB / {:.1} GB", stats.mem_used_mb as f32 / 1024.0, stats.mem_total_mb as f32 / 1024.0);
+
+    let audio_capture = AudioCaptureService::new();
+    thread::sleep(Duration::from_millis(150));
+    let audio = audio_capture.get_telemetry();
+    println!("\n [🔊 Real Audio Output Telemetry]");
+    println!("   Status:  {}", if audio.is_silent { "Silent / No Audio Playing" } else { "🔊 Sound Active" });
+    if !audio.is_silent {
+        println!("   Decibels: {:.1} dBFS (RMS: {:.3})", audio.db, audio.rms);
+    }
     println!("==================================================");
     Ok(())
 }
@@ -292,6 +301,7 @@ fn run_daemon(card_path: &str, input_path: &str) -> Result<()> {
     let mut previous_mode = BarMode::ProSplit;
     let mut fn_key_is_held = false;
 
+    let audio_capture = AudioCaptureService::new();
     let mut mpris = MprisClient::new();
     let mut telemetry = TelemetryProvider::new();
 
@@ -387,16 +397,14 @@ fn run_daemon(card_path: &str, input_path: &str) -> Result<()> {
                             let spec_rect = Rect::new(784, 1, 830, 58);
                             if media_rect.contains(px, py) {
                                 match now_playing.handle_touch(&event, media_rect) {
-                                    WidgetAction::PlayPause => mpris.play_pause(),
-                                    WidgetAction::NextTrack => mpris.next(),
-                                    WidgetAction::PreviousTrack => mpris.previous(),
-                                    WidgetAction::ToggleMode => {
+                                    WidgetAction::Escape => {
                                         if let Some(ref mut vk) = virtual_kbd {
                                             let _ = vk.click_key(evdev::Key::KEY_ESC);
                                         }
-                                        current_mode = current_mode.next();
-                                        previous_mode = current_mode;
                                     }
+                                    WidgetAction::PlayPause => mpris.play_pause(),
+                                    WidgetAction::NextTrack => mpris.next(),
+                                    WidgetAction::PreviousTrack => mpris.previous(),
                                     _ => {}
                                 }
                             } else if spec_rect.contains(px, py) {
@@ -419,20 +427,21 @@ fn run_daemon(card_path: &str, input_path: &str) -> Result<()> {
                             } else {
                                 Rect::new(2, 1, 1280, 58)
                             };
+                            let pro_spec = Rect::new(926, 1, 350, 58);
                             if pro_media.contains(px, py) {
                                 match now_playing.handle_touch(&event, pro_media) {
-                                    WidgetAction::PlayPause => mpris.play_pause(),
-                                    WidgetAction::NextTrack => mpris.next(),
-                                    WidgetAction::PreviousTrack => mpris.previous(),
-                                    WidgetAction::ToggleMode => {
+                                    WidgetAction::Escape => {
                                         if let Some(ref mut vk) = virtual_kbd {
                                             let _ = vk.click_key(evdev::Key::KEY_ESC);
                                         }
-                                        current_mode = current_mode.next();
-                                        previous_mode = current_mode;
                                     }
+                                    WidgetAction::PlayPause => mpris.play_pause(),
+                                    WidgetAction::NextTrack => mpris.next(),
+                                    WidgetAction::PreviousTrack => mpris.previous(),
                                     _ => {}
                                 }
+                            } else if is_playing && pro_spec.contains(px, py) && event.phase == TouchPhase::Down {
+                                mpris.play_pause();
                             }
                         }
                         BarMode::Gallery => {
@@ -453,11 +462,12 @@ fn run_daemon(card_path: &str, input_path: &str) -> Result<()> {
         }
 
         // 3. Refresh dynamic data
+        let audio_telem = audio_capture.get_telemetry();
+        spectrum.update_with_real_audio(&audio_telem);
+
         if frame_count.is_multiple_of(15) {
             let track = mpris.update();
-            let is_playing = track.is_playing;
             now_playing.update_info(track.clone());
-            spectrum.set_active(is_playing);
         }
 
         if frame_count.is_multiple_of(30) {
@@ -467,7 +477,6 @@ fn run_daemon(card_path: &str, input_path: &str) -> Result<()> {
         }
 
         now_playing.tick_scroll();
-        spectrum.update_frame();
         cyberdeck.tick();
 
         // 4. Render Layout onto Framebuffer

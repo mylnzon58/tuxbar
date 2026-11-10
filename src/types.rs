@@ -128,6 +128,7 @@ pub struct TouchEvent {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum WidgetAction {
     None,
+    Escape,
     PlayPause,
     NextTrack,
     PreviousTrack,
