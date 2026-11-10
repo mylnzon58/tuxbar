@@ -1,8 +1,9 @@
-//! Audiophile Dynamic Spectrum Analyzer Widget
-//! Displays a multi-band dancing frequency equalizer with neon gradient and peak hold.
-//! When audio is paused or stopped, it remains completely silent and flat (no ghost movements).
+//! Audiophile Real-Audio Frequency Analyzer Widget
+//! Renders 32 frequency bands driven by ACTUAL sound waves from PipeWire / PulseAudio.
+//! Displays real decibels (dB), pure hardware frequency reaction, and flatline when paused/silent.
 
 use crate::graphics::{FontEngine, Framebuffer};
+use crate::services::audio_capture::AudioTelemetry;
 use crate::types::{Color, Rect, TouchEvent, WidgetAction};
 use crate::widgets::Widget;
 
@@ -11,8 +12,8 @@ const BANDS_COUNT: usize = 32;
 pub struct SpectrumVisualizerWidget {
     levels: [f32; BANDS_COUNT],
     peaks: [f32; BANDS_COUNT],
-    tick: f32,
-    is_active: bool,
+    current_db: f32,
+    is_silent: bool,
 }
 
 impl SpectrumVisualizerWidget {
@@ -21,51 +22,47 @@ impl SpectrumVisualizerWidget {
         Self {
             levels: [0.0; BANDS_COUNT],
             peaks: [0.0; BANDS_COUNT],
-            tick: 0.0,
-            is_active: false, // Inactive by default: flatline until music is actually playing
+            current_db: -100.0,
+            is_silent: true,
         }
     }
 
-    pub fn set_active(&mut self, active: bool) {
-        self.is_active = active;
+    pub fn set_active(&mut self, _active: bool) {
+        // Kept for backward compatibility
     }
 
     pub fn update_frame(&mut self) {
-        if self.is_active {
-            self.tick += 0.15;
+        // Kept for backward compatibility
+    }
 
+    pub fn update_with_real_audio(&mut self, audio: &AudioTelemetry) {
+        self.is_silent = audio.is_silent;
+        self.current_db = audio.db;
+
+        if audio.is_silent {
             for i in 0..BANDS_COUNT {
-                // Synthesize rich harmonic wave dynamics (simulating live audio frequency response)
-                let freq = (i as f32 + 1.0) * 0.45;
-                let wave1 = (self.tick * 2.2 + freq).sin();
-                let wave2 = (self.tick * 3.7 - freq * 0.8).cos();
-                let wave3 = (self.tick * 5.1 + freq * 1.5).sin();
-                let combined = (wave1 * 0.45 + wave2 * 0.35 + wave3 * 0.20 + 1.0) / 2.0;
+                self.levels[i] = (self.levels[i] * 0.4).max(0.0);
+                if self.levels[i] < 0.01 {
+                    self.levels[i] = 0.0;
+                }
+                self.peaks[i] = (self.peaks[i] * 0.4).max(0.0);
+                if self.peaks[i] < 0.01 {
+                    self.peaks[i] = 0.0;
+                }
+            }
+        } else {
+            for i in 0..BANDS_COUNT {
+                let target = audio.bands[i];
+                if target > self.levels[i] {
+                    self.levels[i] += (target - self.levels[i]) * 0.6;
+                } else {
+                    self.levels[i] += (target - self.levels[i]) * 0.3;
+                }
 
-                // Bass bias for lower bands, mid-treble sparkle
-                let bias = if i < 8 { 1.2 } else if i < 20 { 1.0 } else { 0.8 };
-                let target = (combined * bias).clamp(0.08, 1.0);
-
-                // Smooth dampening towards target
-                self.levels[i] += (target - self.levels[i]) * 0.4;
-
-                // Update peak-hold indicators
                 if self.levels[i] > self.peaks[i] {
                     self.peaks[i] = self.levels[i];
                 } else {
                     self.peaks[i] = (self.peaks[i] - 0.02).max(0.0);
-                }
-            }
-        } else {
-            // When audio is stopped or paused, decay instantly to flat zero (zero fake movement)
-            for i in 0..BANDS_COUNT {
-                self.levels[i] = (self.levels[i] * 0.5).max(0.0);
-                if self.levels[i] < 0.01 {
-                    self.levels[i] = 0.0;
-                }
-                self.peaks[i] = (self.peaks[i] * 0.5).max(0.0);
-                if self.peaks[i] < 0.01 {
-                    self.peaks[i] = 0.0;
                 }
             }
         }
@@ -73,7 +70,7 @@ impl SpectrumVisualizerWidget {
 }
 
 impl Widget for SpectrumVisualizerWidget {
-    fn render(&self, fb: &mut Framebuffer, area: Rect, _font: &FontEngine) {
+    fn render(&self, fb: &mut Framebuffer, area: Rect, font: &FontEngine) {
         // Draw dark card background
         fb.draw_rounded_rect(area, 6, Color::CARD_BG);
 
@@ -122,6 +119,14 @@ impl Widget for SpectrumVisualizerWidget {
                 let peak_rect = Rect::new(bar_x, peak_y, bar_width, 2);
                 fb.fill_rect(peak_rect, Color::WHITE);
             }
+        }
+
+        // Draw live decibels indicator badge if active
+        if !self.is_silent && self.current_db > -70.0 {
+            let db_text = format!("{:.0} dB", self.current_db);
+            let tw = font.measure_text_width(&db_text, 14.0);
+            let tx = area.x + area.width as i32 - tw as i32 - 12;
+            fb.draw_text(font, &db_text, tx, area.y + 20, 14.0, Color::CYAN);
         }
     }
 
