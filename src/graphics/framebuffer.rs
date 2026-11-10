@@ -132,3 +132,67 @@ impl Framebuffer {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_framebuffer_init() {
+        let fb = Framebuffer::new();
+        assert_eq!(fb.width, TOUCHBAR_WIDTH);
+        assert_eq!(fb.height, TOUCHBAR_HEIGHT);
+        assert_eq!(fb.pixels.len(), (TOUCHBAR_WIDTH * TOUCHBAR_HEIGHT) as usize);
+        assert!(fb.pixels.iter().all(|&p| p == 0));
+    }
+
+    #[test]
+    fn test_framebuffer_clear() {
+        let mut fb = Framebuffer::new();
+        fb.clear(Color::rgb(255, 0, 0));
+        assert!(fb.pixels.iter().all(|&p| p == 0xFFFF0000));
+    }
+
+    #[test]
+    fn test_framebuffer_set_pixel_bounds() {
+        let mut fb = Framebuffer::new();
+        // Out of bounds should not panic or corrupt memory
+        fb.set_pixel(-1, 0, Color::WHITE);
+        fb.set_pixel(0, -1, Color::WHITE);
+        fb.set_pixel(TOUCHBAR_WIDTH as i32, 0, Color::WHITE);
+        fb.set_pixel(0, TOUCHBAR_HEIGHT as i32, Color::WHITE);
+        assert!(fb.pixels.iter().all(|&p| p == 0));
+
+        // In bounds pixel
+        fb.set_pixel(10, 10, Color::CYAN);
+        let idx = (10 * TOUCHBAR_WIDTH + 10) as usize;
+        assert_eq!(fb.pixels[idx], Color::CYAN.to_argb_u32());
+    }
+
+    #[test]
+    fn test_framebuffer_fill_rect() {
+        let mut fb = Framebuffer::new();
+        let rect = Rect::new(5, 5, 10, 10);
+        fb.fill_rect(rect, Color::GREEN);
+
+        // Check corner pixel
+        let idx = (5 * TOUCHBAR_WIDTH + 5) as usize;
+        assert_eq!(fb.pixels[idx], Color::GREEN.to_argb_u32());
+
+        // Check outside rect
+        let outside_idx = (4 * TOUCHBAR_WIDTH + 5) as usize;
+        assert_eq!(fb.pixels[outside_idx], 0);
+    }
+
+    #[test]
+    fn test_framebuffer_progress_bar() {
+        let mut fb = Framebuffer::new();
+        let rect = Rect::new(0, 0, 100, 10);
+        fb.draw_progress_bar(rect, 0.5, Color::DARK_GRAY, Color::CYAN);
+
+        // Midpoint should be cyan
+        let mid_idx = (5 * TOUCHBAR_WIDTH + 25) as usize;
+        assert_ne!(fb.pixels[mid_idx], 0);
+    }
+}
+

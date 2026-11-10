@@ -99,3 +99,36 @@ pub enum WidgetAction {
     ToggleMute,
     ToggleMode,
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_rect_contains() {
+        let rect = Rect::new(10, 20, 100, 40);
+        assert!(rect.contains(10, 20)); // Top-left corner
+        assert!(rect.contains(50, 30)); // Center
+        assert!(rect.contains(109, 59)); // Bottom-right inside
+        assert!(!rect.contains(9, 20)); // Left outside
+        assert!(!rect.contains(10, 19)); // Top outside
+        assert!(!rect.contains(110, 40)); // Right boundary outside
+        assert!(!rect.contains(50, 60)); // Bottom boundary outside
+    }
+
+    #[test]
+    fn test_color_argb() {
+        let black = Color::BLACK;
+        assert_eq!(black.to_argb_u32(), 0xFF000000);
+
+        let white = Color::WHITE;
+        assert_eq!(white.to_argb_u32(), 0xFFFFFFFF);
+
+        let red = Color::rgb(255, 0, 0);
+        assert_eq!(red.to_argb_u32(), 0xFFFF0000);
+
+        let green_alpha = Color::rgba(0, 255, 0, 128);
+        assert_eq!(green_alpha.to_argb_u32(), 0x8000FF00);
+    }
+}
+

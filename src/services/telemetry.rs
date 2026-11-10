@@ -108,3 +108,27 @@ fn parse_kb(line: &str) -> u64 {
         .and_then(|val| val.parse::<u64>().ok())
         .unwrap_or(0)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_parse_kb() {
+        assert_eq!(parse_kb("MemTotal:       16049216 kB"), 16049216);
+        assert_eq!(parse_kb("MemAvailable:    3754944 kB"), 3754944);
+        assert_eq!(parse_kb("Invalid line"), 0);
+        assert_eq!(parse_kb(""), 0);
+    }
+
+    #[test]
+    fn test_telemetry_provider_live() {
+        let mut provider = TelemetryProvider::new();
+        let stats = provider.refresh();
+        // Total memory on real system should be > 0
+        assert!(stats.mem_total_mb > 0);
+        // CPU percentage clamped
+        assert!(stats.cpu_usage_pct >= 0.0 && stats.cpu_usage_pct <= 100.0);
+    }
+}
+
