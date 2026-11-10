@@ -39,17 +39,31 @@ impl GalleryWidget {
     pub fn load_from_pictures_or_fallback(&mut self) {
         let mut loaded = Vec::new();
 
-        // 1. Scan ~/Pictures/Capturas de pantalla or ~/Pictures
-        let home = std::env::var("HOME").ok().map(PathBuf::from);
-        let dirs_to_check = [
-            home.as_ref().map(|h| h.join("Pictures/Capturas de pantalla")),
-            home.as_ref().map(|h| h.join("Pictures")),
-            home.as_ref().map(|h| h.join("Downloads")),
-        ];
+        // 1. Scan user directories (/home/*/Pictures/Capturas de pantalla, etc.)
+        let mut dirs_to_check = Vec::new();
 
-        for dir_opt in dirs_to_check.into_iter().flatten() {
-            if dir_opt.exists() && loaded.len() < 16 {
-                if let Ok(entries) = fs::read_dir(&dir_opt) {
+        if let Ok(entries) = fs::read_dir("/home") {
+            for entry in entries.flatten() {
+                let user_dir = entry.path();
+                if user_dir.is_dir() {
+                    dirs_to_check.push(user_dir.join("Pictures/Capturas de pantalla"));
+                    dirs_to_check.push(user_dir.join("Pictures"));
+                    dirs_to_check.push(user_dir.join("Downloads"));
+                    dirs_to_check.push(user_dir.join("Desktop"));
+                }
+            }
+        }
+
+        if let Ok(home) = std::env::var("HOME") {
+            let h = PathBuf::from(home);
+            dirs_to_check.push(h.join("Pictures/Capturas de pantalla"));
+            dirs_to_check.push(h.join("Pictures"));
+            dirs_to_check.push(h.join("Downloads"));
+        }
+
+        for dir in dirs_to_check {
+            if dir.exists() && loaded.len() < 16 {
+                if let Ok(entries) = fs::read_dir(&dir) {
                     let mut paths: Vec<PathBuf> = entries
                         .filter_map(|e| e.ok())
                         .map(|e| e.path())
@@ -59,7 +73,7 @@ impl GalleryWidget {
                         })
                         .collect();
                     paths.sort();
-                    paths.reverse(); // Most recent first
+                    paths.reverse(); // Most recent screenshots first
 
                     for p in paths.into_iter().take(12) {
                         if let Ok(img) = image::open(&p) {
@@ -77,7 +91,7 @@ impl GalleryWidget {
             }
         }
 
-        // 2. Fallback procedural demo photos if no images found
+        // 2. Fallback procedural demo photos if no images found anywhere
         if loaded.is_empty() {
             let demos = [
                 ("Neon Grid", [0, 240, 255, 255], [138, 43, 226, 255]),
@@ -128,6 +142,11 @@ impl GalleryWidget {
     pub fn open_selected(&self) {
         if let Some(item) = self.photos.get(self.selected_idx) {
             if item.path.exists() {
+                let path_str = item.path.to_string_lossy();
+                let user = std::env::var("SUDO_USER").unwrap_or_else(|_| "zeeroj".to_string());
+                let _ = std::process::Command::new("su")
+                    .args(["-", &user, "-c", &format!("DISPLAY=:0 DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus xdg-open \"{}\"", path_str)])
+                    .spawn();
                 let _ = std::process::Command::new("xdg-open")
                     .arg(&item.path)
                     .spawn();
