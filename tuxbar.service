@@ -17,8 +17,6 @@ StandardError=journal
 
 # Security Hardening
 ProtectSystem=full
-ProtectHome=read-only
-NoNewPrivileges=true
 
 [Install]
 WantedBy=multi-user.target

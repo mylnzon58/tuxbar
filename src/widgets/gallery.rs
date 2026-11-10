@@ -17,6 +17,71 @@ pub struct PhotoItem {
     pub thumbnail: RgbaImage,
 }
 
+#[derive(Debug, Clone)]
+struct UserSessionInfo {
+    uid: u32,
+    gid: u32,
+    username: String,
+    home: PathBuf,
+    runtime_dir: PathBuf,
+}
+
+fn detect_user_session() -> UserSessionInfo {
+    let mut target_uid = unsafe { libc::geteuid() };
+    if target_uid == 0 {
+        if let Ok(sudo_uid) = std::env::var("SUDO_UID") {
+            if let Ok(id) = sudo_uid.parse::<u32>() {
+                if id >= 1000 {
+                    target_uid = id;
+                }
+            }
+        }
+    }
+    if target_uid == 0 {
+        if let Ok(entries) = fs::read_dir("/run/user") {
+            for entry in entries.flatten() {
+                if let Ok(name) = entry.file_name().into_string() {
+                    if let Ok(id) = name.parse::<u32>() {
+                        if id >= 1000 {
+                            target_uid = id;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    if target_uid == 0 {
+        target_uid = 1000;
+    }
+
+    let mut username = String::from("user");
+    let mut home = PathBuf::from(format!("/home/{}", target_uid));
+    let mut gid = target_uid;
+
+    unsafe {
+        let pw = libc::getpwuid(target_uid);
+        if !pw.is_null() {
+            username = std::ffi::CStr::from_ptr((*pw).pw_name)
+                .to_string_lossy()
+                .into_owned();
+            let home_str = std::ffi::CStr::from_ptr((*pw).pw_dir)
+                .to_string_lossy()
+                .into_owned();
+            home = PathBuf::from(home_str);
+            gid = (*pw).pw_gid;
+        }
+    }
+
+    UserSessionInfo {
+        uid: target_uid,
+        gid,
+        username,
+        home,
+        runtime_dir: PathBuf::from(format!("/run/user/{}", target_uid)),
+    }
+}
+
 pub struct GalleryWidget {
     photos: Vec<PhotoItem>,
     pub selected_idx: usize,
@@ -43,23 +108,21 @@ impl GalleryWidget {
 
     pub fn load_from_pictures_or_fallback(&mut self) {
         let mut loaded = Vec::new();
+        let session = detect_user_session();
 
-        // 1. Dynamically scan user directories across /home/*/Pictures, Screenshots, Downloads
+        // 1. Dynamically scan user directories across session home and /home/*
         let mut dirs_to_check = Vec::new();
 
-        if let Ok(home) = std::env::var("HOME") {
-            let h = PathBuf::from(home);
-            dirs_to_check.push(h.join("Pictures/Capturas de pantalla"));
-            dirs_to_check.push(h.join("Pictures/Screenshots"));
-            dirs_to_check.push(h.join("Pictures"));
-            dirs_to_check.push(h.join("Desktop"));
-            dirs_to_check.push(h.join("Downloads"));
-        }
+        dirs_to_check.push(session.home.join("Pictures/Capturas de pantalla"));
+        dirs_to_check.push(session.home.join("Pictures/Screenshots"));
+        dirs_to_check.push(session.home.join("Pictures"));
+        dirs_to_check.push(session.home.join("Desktop"));
+        dirs_to_check.push(session.home.join("Downloads"));
 
         if let Ok(entries) = fs::read_dir("/home") {
             for entry in entries.flatten() {
                 let p = entry.path();
-                if p.is_dir() {
+                if p.is_dir() && p != session.home {
                     dirs_to_check.push(p.join("Pictures/Capturas de pantalla"));
                     dirs_to_check.push(p.join("Pictures/Screenshots"));
                     dirs_to_check.push(p.join("Pictures"));
@@ -149,32 +212,134 @@ impl GalleryWidget {
 
     pub fn open_selected(&self) {
         if let Some(item) = self.photos.get(self.selected_idx) {
-            if item.path.exists() {
-                let path_str = item.path.to_string_lossy().to_string();
-                println!("[TuxBar] Launching image viewer for: {}", path_str);
+            if !item.path.exists() {
+                eprintln!("[TuxBar] Photo path does not exist: {:?}", item.path);
+                return;
+            }
 
-                // Direct kernel setuid(1000) execution without PAM or auth prompts
-                let res = std::process::Command::new("gio")
-                    .args(["open", &path_str])
-                    .uid(1000)
-                    .gid(1000)
-                    .env("XDG_RUNTIME_DIR", "/run/user/1000")
-                    .env("DBUS_SESSION_BUS_ADDRESS", "unix:path=/run/user/1000/bus")
+            let path_str = item.path.to_string_lossy().to_string();
+            println!("[TuxBar] Launching image viewer for: {}", path_str);
+
+            let session = detect_user_session();
+            let bus_path = format!("unix:path={}/bus", session.runtime_dir.display());
+
+            // 1. Identify preferred native image viewer (eog on GNOME, loupe on GNOME 45+)
+            let native_viewer = if std::path::Path::new("/usr/bin/eog").exists() {
+                Some("/usr/bin/eog")
+            } else if std::path::Path::new("/usr/bin/loupe").exists() {
+                Some("/usr/bin/loupe")
+            } else {
+                None
+            };
+
+            let mut launched = false;
+
+            // Priority 1: systemd-run --user with native viewer (eog / loupe)
+            // Launches directly within user GUI session slice, bypassing root daemon namespace/sandbox
+            if let Some(viewer) = native_viewer {
+                let res = std::process::Command::new("systemd-run")
+                    .args(["--user", "--slice=app.slice", viewer, &path_str])
+                    .uid(session.uid)
+                    .gid(session.gid)
+                    .env("HOME", &session.home)
+                    .env("USER", &session.username)
+                    .env("XDG_RUNTIME_DIR", &session.runtime_dir)
+                    .env("DBUS_SESSION_BUS_ADDRESS", &bus_path)
                     .env("WAYLAND_DISPLAY", "wayland-0")
                     .env("DISPLAY", ":0")
+                    .env("XDG_CURRENT_DESKTOP", "ubuntu:GNOME")
                     .spawn();
 
-                if res.is_err() {
-                    let _ = std::process::Command::new("xdg-open")
+                if let Ok(mut child) = res {
+                    if let Ok(status) = child.wait() {
+                        if status.success() {
+                            println!("[TuxBar] Successfully launched {} via systemd-run", viewer);
+                            launched = true;
+                        }
+                    }
+                }
+
+                // Priority 2: Direct execution of native viewer
+                if !launched {
+                    let direct_res = std::process::Command::new(viewer)
                         .arg(&path_str)
-                        .uid(1000)
-                        .gid(1000)
-                        .env("XDG_RUNTIME_DIR", "/run/user/1000")
-                        .env("DBUS_SESSION_BUS_ADDRESS", "unix:path=/run/user/1000/bus")
+                        .uid(session.uid)
+                        .gid(session.gid)
+                        .env("HOME", &session.home)
+                        .env("USER", &session.username)
+                        .env("XDG_RUNTIME_DIR", &session.runtime_dir)
+                        .env("DBUS_SESSION_BUS_ADDRESS", &bus_path)
                         .env("WAYLAND_DISPLAY", "wayland-0")
                         .env("DISPLAY", ":0")
+                        .env("XDG_CURRENT_DESKTOP", "ubuntu:GNOME")
                         .spawn();
+
+                    if direct_res.is_ok() {
+                        println!("[TuxBar] Successfully spawned {} directly", viewer);
+                        launched = true;
+                    }
                 }
+            }
+
+            // Priority 3: systemd-run --user gio open
+            if !launched {
+                let gio_run = std::process::Command::new("systemd-run")
+                    .args(["--user", "--slice=app.slice", "gio", "open", &path_str])
+                    .uid(session.uid)
+                    .gid(session.gid)
+                    .env("HOME", &session.home)
+                    .env("USER", &session.username)
+                    .env("XDG_RUNTIME_DIR", &session.runtime_dir)
+                    .env("DBUS_SESSION_BUS_ADDRESS", &bus_path)
+                    .env("WAYLAND_DISPLAY", "wayland-0")
+                    .env("DISPLAY", ":0")
+                    .env("XDG_CURRENT_DESKTOP", "ubuntu:GNOME")
+                    .spawn();
+
+                if let Ok(mut child) = gio_run {
+                    if let Ok(status) = child.wait() {
+                        if status.success() {
+                            println!("[TuxBar] Successfully opened image via gio open (systemd-run)");
+                            launched = true;
+                        }
+                    }
+                }
+            }
+
+            // Priority 4: gio open direct
+            if !launched {
+                let gio_direct = std::process::Command::new("gio")
+                    .args(["open", &path_str])
+                    .uid(session.uid)
+                    .gid(session.gid)
+                    .env("HOME", &session.home)
+                    .env("USER", &session.username)
+                    .env("XDG_RUNTIME_DIR", &session.runtime_dir)
+                    .env("DBUS_SESSION_BUS_ADDRESS", &bus_path)
+                    .env("WAYLAND_DISPLAY", "wayland-0")
+                    .env("DISPLAY", ":0")
+                    .env("XDG_CURRENT_DESKTOP", "ubuntu:GNOME")
+                    .spawn();
+
+                if gio_direct.is_ok() {
+                    launched = true;
+                }
+            }
+
+            // Priority 5: xdg-open fallback
+            if !launched {
+                let _ = std::process::Command::new("xdg-open")
+                    .arg(&path_str)
+                    .uid(session.uid)
+                    .gid(session.gid)
+                    .env("HOME", &session.home)
+                    .env("USER", &session.username)
+                    .env("XDG_RUNTIME_DIR", &session.runtime_dir)
+                    .env("DBUS_SESSION_BUS_ADDRESS", &bus_path)
+                    .env("WAYLAND_DISPLAY", "wayland-0")
+                    .env("DISPLAY", ":0")
+                    .env("XDG_CURRENT_DESKTOP", "ubuntu:GNOME")
+                    .spawn();
             }
         }
     }
