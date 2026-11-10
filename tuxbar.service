@@ -9,6 +9,7 @@ Type=simple
 ExecStart=/usr/local/bin/tuxbar run
 Restart=always
 RestartSec=2s
+TimeoutStopSec=3s
 KillMode=process
 StandardOutput=journal
 StandardError=journal

@@ -37,8 +37,9 @@ echo -e "${GREEN}[✓] Binario TuxBar verificado con éxito.${NC}"
 
 # 2. Instalar binario en /usr/local/bin (deteniendo instancias previas)
 echo -e "\n${CYAN}[2/4] Instalando ejecutable en el sistema...${NC}"
+systemctl kill -s SIGKILL tuxbar.service 2>/dev/null || true
+pkill -9 -x tuxbar 2>/dev/null || true
 systemctl stop tuxbar.service 2>/dev/null || true
-pkill -9 tuxbar 2>/dev/null || true
 install -m 755 "$SCRIPT_DIR/target/release/tuxbar" /usr/local/bin/tuxbar
 
 # 3. Crear script de conmutación instantánea (tuxbar-toggle)
