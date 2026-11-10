@@ -365,6 +365,9 @@ fn run_daemon(card_path: &str, input_path: &str) -> Result<()> {
                     if mode_btn_rect.contains(px, py) && event.phase == TouchPhase::Down {
                         current_mode = current_mode.next();
                         previous_mode = current_mode;
+                        if current_mode == BarMode::Gallery {
+                            gallery.load_from_pictures_or_fallback();
+                        }
                         println!("[TuxBar] Switched to mode: {}", current_mode.label());
                         continue;
                     }
@@ -402,9 +405,24 @@ fn run_daemon(card_path: &str, input_path: &str) -> Result<()> {
                                             let _ = vk.click_key(evdev::Key::KEY_ESC);
                                         }
                                     }
-                                    WidgetAction::PlayPause => mpris.play_pause(),
-                                    WidgetAction::NextTrack => mpris.next(),
-                                    WidgetAction::PreviousTrack => mpris.previous(),
+                                    WidgetAction::PlayPause => {
+                                        mpris.play_pause();
+                                        if let Some(ref mut vk) = virtual_kbd {
+                                            let _ = vk.click_key(evdev::Key::KEY_PLAYPAUSE);
+                                        }
+                                    }
+                                    WidgetAction::NextTrack => {
+                                        mpris.next();
+                                        if let Some(ref mut vk) = virtual_kbd {
+                                            let _ = vk.click_key(evdev::Key::KEY_NEXTSONG);
+                                        }
+                                    }
+                                    WidgetAction::PreviousTrack => {
+                                        mpris.previous();
+                                        if let Some(ref mut vk) = virtual_kbd {
+                                            let _ = vk.click_key(evdev::Key::KEY_PREVIOUSSONG);
+                                        }
+                                    }
                                     _ => {}
                                 }
                             } else if spec_rect.contains(px, py) {
@@ -421,7 +439,7 @@ fn run_daemon(card_path: &str, input_path: &str) -> Result<()> {
                             }
                         }
                         BarMode::ProSplit => {
-                            let is_playing = !now_playing.info.title.is_empty();
+                            let is_playing = now_playing.info.is_playing;
                             let pro_media = if is_playing {
                                 Rect::new(2, 1, 920, 58)
                             } else {
@@ -435,9 +453,24 @@ fn run_daemon(card_path: &str, input_path: &str) -> Result<()> {
                                             let _ = vk.click_key(evdev::Key::KEY_ESC);
                                         }
                                     }
-                                    WidgetAction::PlayPause => mpris.play_pause(),
-                                    WidgetAction::NextTrack => mpris.next(),
-                                    WidgetAction::PreviousTrack => mpris.previous(),
+                                    WidgetAction::PlayPause => {
+                                        mpris.play_pause();
+                                        if let Some(ref mut vk) = virtual_kbd {
+                                            let _ = vk.click_key(evdev::Key::KEY_PLAYPAUSE);
+                                        }
+                                    }
+                                    WidgetAction::NextTrack => {
+                                        mpris.next();
+                                        if let Some(ref mut vk) = virtual_kbd {
+                                            let _ = vk.click_key(evdev::Key::KEY_NEXTSONG);
+                                        }
+                                    }
+                                    WidgetAction::PreviousTrack => {
+                                        mpris.previous();
+                                        if let Some(ref mut vk) = virtual_kbd {
+                                            let _ = vk.click_key(evdev::Key::KEY_PREVIOUSSONG);
+                                        }
+                                    }
                                     _ => {}
                                 }
                             } else if is_playing && pro_spec.contains(px, py) && event.phase == TouchPhase::Down {
@@ -498,7 +531,7 @@ fn run_daemon(card_path: &str, input_path: &str) -> Result<()> {
                 cyberdeck.render(&mut fb, cyber_rect, &font);
             }
             BarMode::ProSplit => {
-                let is_playing = !now_playing.info.title.is_empty();
+                let is_playing = now_playing.info.is_playing;
                 if is_playing {
                     let pro_media = Rect::new(2, 1, 920, 58);
                     let pro_spec = Rect::new(926, 1, 350, 58);

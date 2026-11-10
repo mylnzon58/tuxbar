@@ -76,7 +76,8 @@ impl Widget for NowPlayingWidget {
         cur_x += next_w as i32 + 12;
 
         // 3. Track Title & Artist
-        let remaining_w = (area.x + area.width as i32) - cur_x - 10;
+        let max_x = area.x + area.width as i32 - 10;
+        let remaining_w = max_x - cur_x;
         if remaining_w > 50 {
             if !self.info.title.is_empty() {
                 let track_text = if self.info.artist.is_empty() {
@@ -94,7 +95,7 @@ impl Widget for NowPlayingWidget {
                     cur_x
                 };
 
-                fb.draw_text(font, &track_text, draw_x, btn_y + 34, 22.0, Color::WHITE);
+                fb.draw_text_clipped(font, &track_text, draw_x, btn_y + 34, 22.0, Color::WHITE, max_x);
 
                 // Progress bar at bottom edge
                 if self.info.length_secs > 0.0 {
@@ -103,9 +104,9 @@ impl Widget for NowPlayingWidget {
                     fb.draw_progress_bar(bar_rect, ratio, Color::DARK_GRAY, Color::CYAN);
                 }
             } else {
-                // Idle state: Prompt user and fill the bar with large, prominent helpful status
-                let idle_text = "🎵 Presiona ▶ para reproducir música";
-                fb.draw_text(font, idle_text, cur_x + 6, btn_y + 38, 22.0, Color::GRAY);
+                // Idle state: Clean, prominent prompt without missing emoji glyphs
+                let idle_text = "Toca ▶ para reproducir";
+                fb.draw_text_clipped(font, idle_text, cur_x + 6, btn_y + 38, 20.0, Color::GRAY, max_x);
             }
         }
     }

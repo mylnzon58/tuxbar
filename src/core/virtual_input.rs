@@ -25,6 +25,13 @@ impl VirtualKeyboard {
         keys.insert(Key::KEY_F10);
         keys.insert(Key::KEY_F11);
         keys.insert(Key::KEY_F12);
+        // Multimedia Keys for Universal Player Compatibility (YouTube, Spotify, Chrome, VLC)
+        keys.insert(Key::KEY_PLAYPAUSE);
+        keys.insert(Key::KEY_NEXTSONG);
+        keys.insert(Key::KEY_PREVIOUSSONG);
+        keys.insert(Key::KEY_VOLUMEUP);
+        keys.insert(Key::KEY_VOLUMEDOWN);
+        keys.insert(Key::KEY_MUTE);
 
         let device = VirtualDeviceBuilder::new()?
             .name("TuxBar Dynamic Function Row")

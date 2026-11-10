@@ -40,7 +40,12 @@ impl GalleryWidget {
         let mut loaded = Vec::new();
 
         // 1. Scan user directories (/home/*/Pictures/Capturas de pantalla, etc.)
-        let mut dirs_to_check = Vec::new();
+        let mut dirs_to_check = vec![
+            PathBuf::from("/home/zeeroj/Pictures/Capturas de pantalla"),
+            PathBuf::from("/home/zeeroj/Pictures"),
+            PathBuf::from("/home/zeeroj/Desktop"),
+            PathBuf::from("/home/zeeroj/Downloads"),
+        ];
 
         if let Ok(entries) = fs::read_dir("/home") {
             for entry in entries.flatten() {

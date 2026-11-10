@@ -132,6 +132,43 @@ impl Framebuffer {
         }
     }
 
+    pub fn draw_text_clipped(
+        &mut self,
+        font: &FontEngine,
+        text: &str,
+        mut x: i32,
+        base_y: i32,
+        size_px: f32,
+        color: Color,
+        max_x: i32,
+    ) {
+        for c in text.chars() {
+            if x >= max_x {
+                break;
+            }
+            let (metrics, bitmap) = font.rasterize(c, size_px);
+            let glyph_x = x + metrics.xmin;
+            let glyph_y = base_y - metrics.height as i32 - metrics.ymin;
+
+            for row in 0..metrics.height {
+                for col in 0..metrics.width {
+                    let px = glyph_x + col as i32;
+                    let py = glyph_y + row as i32;
+                    if px >= max_x || px < 0 {
+                        continue;
+                    }
+                    let alpha = bitmap[row * metrics.width + col];
+                    if alpha > 0 {
+                        let blended_alpha = ((color.a as u32 * alpha as u32) / 255) as u8;
+                        let text_color = Color::rgba(color.r, color.g, color.b, blended_alpha);
+                        self.set_pixel(px, py, text_color);
+                    }
+                }
+            }
+            x += metrics.advance_width.round() as i32;
+        }
+    }
+
     pub fn draw_glow_circle(&mut self, cx: i32, cy: i32, radius: i32, color: Color) {
         let r2 = radius * radius;
         let x_start = (cx - radius).max(0);
