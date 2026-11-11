@@ -60,7 +60,7 @@ impl ControlDeckWidget {
             .map(|bytes| {
                 image::load_from_memory(bytes)
                     .map(|img| img.to_rgba8())
-                    .unwrap_or_else(|_| RgbaImage::new(32, 32))
+                    .unwrap_or_else(|_| RgbaImage::new(36, 36))
             })
             .collect();
 
@@ -157,39 +157,58 @@ impl Widget for ControlDeckWidget {
             let is_pressed = self.active_button == Some(i);
 
             let border_color = if is_pressed {
-                Color::rgb(140, 160, 185)
+                Color::ACCENT
+            } else if i == 0 {
+                Color::rgb(220, 38, 38)
             } else {
-                Color::rgb(48, 54, 61)
+                Color::rgb(85, 105, 135)
             };
 
             let bg_color = if is_pressed {
-                Color::rgb(55, 65, 82)
+                Color::ACCENT
+            } else if i == 0 {
+                Color::rgb(45, 20, 25)
             } else {
-                Color::rgb(22, 27, 34)
+                Color::rgb(22, 28, 40)
             };
 
-            // Draw subtle rounded bordered slate card
-            fb.draw_rounded_rect_bordered(btn_rect, 6, bg_color, border_color, 1);
+            // Draw rounded bordered card with 2px prominent borders matching Fn keys
+            fb.draw_rounded_rect_bordered(btn_rect, 6, bg_color, border_color, 2);
 
-            // Draw Authentic High-Definition Icon (32x32)
-            if let Some(icon_img) = self.icons.get(i) {
-                let ix = btn_x + (btn_w - 32) / 2;
-                let iy = btn_y + 4;
-                fb.draw_image(icon_img, ix, iy, 32, 32, 0);
+            if i == 0 {
+                // Esc key: Prominent 22px bold keycap typography vertically centered like in Fn keys
+                let font_size = 22.0;
+                let text_w = font.measure_text_width("Esc", font_size);
+                let text_x = btn_x + (btn_w - text_w as i32) / 2;
+                let text_y = btn_y + 38;
+
+                let text_color = if is_pressed {
+                    Color::BLACK
+                } else {
+                    Color::rgb(252, 165, 165)
+                };
+                fb.draw_text(font, "Esc", text_x, text_y, font_size, text_color);
+            } else {
+                // Draw Authentic High-Definition Icon (36x36)
+                if let Some(icon_img) = self.icons.get(i) {
+                    let ix = btn_x + (btn_w - 36) / 2;
+                    let iy = btn_y + 2;
+                    fb.draw_image(icon_img, ix, iy, 36, 36, 0);
+                }
+
+                // Button label in 13.5px bold
+                let font_size = 13.5;
+                let text_w = font.measure_text_width(btn.label, font_size);
+                let text_x = btn_x + (btn_w - text_w as i32) / 2;
+                let text_y = btn_y + 51;
+
+                let text_color = if is_pressed {
+                    Color::BLACK
+                } else {
+                    Color::rgb(240, 243, 246)
+                };
+                fb.draw_text(font, btn.label, text_x, text_y, font_size, text_color);
             }
-
-            // Button label in 11px
-            let font_size = 11.0;
-            let text_w = font.measure_text_width(btn.label, font_size);
-            let text_x = btn_x + (btn_w - text_w as i32) / 2;
-            let text_y = btn_y + 49;
-
-            let text_color = if is_pressed {
-                Color::WHITE
-            } else {
-                Color::rgb(209, 213, 219)
-            };
-            fb.draw_text(font, btn.label, text_x, text_y, font_size, text_color);
         }
     }
 
