@@ -9,6 +9,7 @@ use crate::widgets::Widget;
 
 pub struct CyberdeckWidget {
     stats: SystemStats,
+    smooth_core_usage: [f32; 16],
     pulse: f32,
 }
 
@@ -17,6 +18,7 @@ impl CyberdeckWidget {
     pub fn new() -> Self {
         Self {
             stats: SystemStats::default(),
+            smooth_core_usage: [0.0; 16],
             pulse: 0.0,
         }
     }
@@ -27,6 +29,11 @@ impl CyberdeckWidget {
 
     pub fn tick(&mut self) {
         self.pulse += 0.1;
+        // Smoothly interpolate displayed core load towards target kernel telemetry at 30 FPS
+        for i in 0..16 {
+            let target = self.stats.core_usage_pct[i];
+            self.smooth_core_usage[i] += (target - self.smooth_core_usage[i]) * 0.25;
+        }
     }
 }
 
@@ -59,7 +66,7 @@ impl Widget for CyberdeckWidget {
         let col_y = area.y + 7;
 
         for i in 0..core_count {
-            let load = self.stats.core_usage_pct[i].clamp(0.0, 100.0);
+            let load = self.smooth_core_usage[i].clamp(0.0, 100.0);
             let bar_x = cur_x + (i as u32 * (col_w + 4)) as i32;
 
             // Background slot

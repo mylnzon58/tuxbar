@@ -36,10 +36,24 @@ impl TelemetryProvider {
     #[must_use]
     pub fn new() -> Self {
         let (idle, total) = Self::read_cpu_raw();
+        let mut core_ticks = [(0, 0); 16];
+        if let Ok(stat) = fs::read_to_string("/proc/stat") {
+            for line in stat.lines() {
+                if line.starts_with("cpu") && !line.starts_with("cpu ") {
+                    let first_word = line.split_whitespace().next().unwrap_or("");
+                    if let Ok(core_id) = first_word[3..].parse::<usize>() {
+                        if core_id < 16 {
+                            core_ticks[core_id] = parse_cpu_line(line);
+                        }
+                    }
+                }
+            }
+        }
+
         Self {
             last_idle: idle,
             last_total: total,
-            last_core_ticks: [(0, 0); 16],
+            last_core_ticks: core_ticks,
             cached_stats: SystemStats::default(),
         }
     }
@@ -116,9 +130,59 @@ impl TelemetryProvider {
     }
 
     fn read_cpu_temp() -> f32 {
-        for zone in 0..6 {
-            let path = format!("/sys/class/thermal/thermal_zone{zone}/temp");
-            if let Ok(content) = fs::read_to_string(&path) {
+        // Priority 1: Intel coretemp hwmon Package id 0 (true CPU package temperature)
+        if let Ok(entries) = fs::read_dir("/sys/class/hwmon") {
+            for entry in entries.flatten() {
+                let p = entry.path();
+                if let Ok(name) = fs::read_to_string(p.join("name")) {
+                    if name.trim() == "coretemp" {
+                        if let Ok(val_str) = fs::read_to_string(p.join("temp1_input")) {
+                            if let Ok(val) = val_str.trim().parse::<f32>() {
+                                let temp = if val > 1000.0 { val / 1000.0 } else { val };
+                                if (20.0..=115.0).contains(&temp) {
+                                    return temp;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Priority 2: x86_pkg_temp in thermal_zone
+        if let Ok(entries) = fs::read_dir("/sys/class/thermal") {
+            for entry in entries.flatten() {
+                let p = entry.path();
+                let fname = entry.file_name();
+                if fname.to_string_lossy().starts_with("thermal_zone") {
+                    if let Ok(ztype) = fs::read_to_string(p.join("type")) {
+                        let t = ztype.trim().to_lowercase();
+                        if t.contains("pkg") || t.contains("x86_pkg") || t.contains("cpu") {
+                            if let Ok(val_str) = fs::read_to_string(p.join("temp")) {
+                                if let Ok(val) = val_str.trim().parse::<f32>() {
+                                    let temp = if val > 1000.0 { val / 1000.0 } else { val };
+                                    if (20.0..=115.0).contains(&temp) {
+                                        return temp;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Priority 3: Fallback thermal zones (skipping battery)
+        for zone in 0..10 {
+            let path = format!("/sys/class/thermal/thermal_zone{zone}");
+            let type_path = format!("{path}/type");
+            if let Ok(ztype) = fs::read_to_string(&type_path) {
+                if ztype.contains("battery") {
+                    continue;
+                }
+            }
+            let temp_path = format!("{path}/temp");
+            if let Ok(content) = fs::read_to_string(&temp_path) {
                 if let Ok(val) = content.trim().parse::<f32>() {
                     let temp = if val > 1000.0 { val / 1000.0 } else { val };
                     if (30.0..=115.0).contains(&temp) {
