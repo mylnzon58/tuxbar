@@ -39,6 +39,8 @@ impl VirtualKeyboard {
         keys.insert(Key::KEY_WWW);
         keys.insert(Key::KEY_FILE);
         keys.insert(Key::KEY_LEFTMETA);
+        keys.insert(Key::KEY_KBDILLUMDOWN);
+        keys.insert(Key::KEY_KBDILLUMUP);
 
         let device = VirtualDeviceBuilder::new()?
             .name("TuxBar Dynamic Function Row")

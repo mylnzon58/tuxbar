@@ -31,9 +31,9 @@ echo -e "\n${CYAN}[1/4] Verificando binario TuxBar compilado en Rust...${NC}"
 if [ ! -f "$SCRIPT_DIR/target/release/tuxbar" ]; then
     # Si se ejecuta mediante curl/pipe o no existe el binario local, intentar descargar release oficial
     if command -v curl >/dev/null 2>&1; then
-        echo -e "${YELLOW}[i] Descargando paquete oficial precompilado v0.2.2 desde GitHub...${NC}"
+        echo -e "${YELLOW}[i] Descargando paquete oficial precompilado v0.2.3 desde GitHub...${NC}"
         TMP_DIR=$(mktemp -d)
-        if curl -sSL "https://github.com/mylnzon58/tuxbar/releases/download/v0.2.2/tuxbar_0.2.2_amd64.deb" -o "$TMP_DIR/tuxbar.deb" 2>/dev/null && [ -s "$TMP_DIR/tuxbar.deb" ]; then
+        if curl -sSL "https://github.com/mylnzon58/tuxbar/releases/download/v0.2.3/tuxbar_0.2.3_amd64.deb" -o "$TMP_DIR/tuxbar.deb" 2>/dev/null && [ -s "$TMP_DIR/tuxbar.deb" ]; then
             dpkg -i "$TMP_DIR/tuxbar.deb"
             rm -rf "$TMP_DIR"
             echo -e "${GREEN}[✓] TuxBar instalado y activado exitosamente mediante paquete oficial Debian.${NC}"

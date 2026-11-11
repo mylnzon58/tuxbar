@@ -140,6 +140,8 @@ pub enum WidgetAction {
     SeekRatio(u32),
     BrightnessUp,
     BrightnessDown,
+    KbdBrightnessUp,
+    KbdBrightnessDown,
     VolumeUp,
     VolumeDown,
     ToggleMute,

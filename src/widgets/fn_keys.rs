@@ -56,16 +56,23 @@ impl Widget for FnKeysWidget {
             let btn_rect = Rect::new(btn_x, btn_y, btn_w as u32, btn_h);
 
             let is_pressed = self.active_key == Some(i);
+            let border_color = if is_pressed {
+                Color::ACCENT
+            } else if i == 0 {
+                Color::rgb(220, 38, 38)
+            } else {
+                Color::rgb(85, 105, 135)
+            };
+
             let bg_color = if is_pressed {
                 Color::ACCENT
             } else if i == 0 {
-                // Distinct Esc button
-                Color::rgb(45, 55, 72)
+                Color::rgb(45, 20, 25)
             } else {
-                Color::rgb(26, 32, 44)
+                Color::rgb(22, 28, 40)
             };
 
-            fb.draw_rounded_rect(btn_rect, 6, bg_color);
+            fb.draw_rounded_rect_bordered(btn_rect, 6, bg_color, border_color, 2);
 
             // Large, prominent 22-24px bold typography vertically centered
             let font_size = if i == 0 { 22.0 } else { 24.0 };
@@ -76,7 +83,7 @@ impl Widget for FnKeysWidget {
             let text_color = if is_pressed { 
                 Color::BLACK 
             } else if i == 0 { 
-                Color::CYAN 
+                Color::rgb(252, 165, 165) 
             } else { 
                 Color::WHITE 
             };

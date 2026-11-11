@@ -39,20 +39,21 @@ Hasta hoy, utilizar Linux en una MacBook Pro con Touch Bar significaba conformar
 
 ### ⌨️ 5. Modo F1-F12 Keys (Auto-conmutación por Hardware con Tecla Fn Física)
 ![TuxBar Fn Keys Mode](assets/tuxbar_preview_fnkeys.png)
-*13 teclas estándar completas de 58 px de altura con tipografía vectorial de alta definición. El listener de hardware monitorea el teclado interno de Apple: **al mantener pulsada la tecla física `Fn`, la barra cambia a las teclas de función F1-F12 en 0 ms y regresa a tus widgets al soltarla**.*
+*13 teclas estándar completas de 58 px de altura con bordes físicos resaltados de 2 px (estilo keycap mecánico) y tipografía vectorial de alta definición. Esc resaltado en carmesí y F1-F12 en acero reflectante. El listener de hardware monitorea el teclado interno de Apple: **al mantener pulsada la tecla física `Fn`, la barra cambia a las teclas de función F1-F12 en 0 ms y regresa a tus widgets al soltarla**.*
 
-### 🎛️ 6. Modo Control Deck (Centro de Control & Accesos Rápidos del Sistema)
+### 🎛️ 6. Modo Control Deck (Centro de Control Iconográfico & Accesos Rápidos)
 ![TuxBar Control Deck Mode](assets/tuxbar_preview_controldeck.png)
-*13 botones táctiles de 132×56 px con doble despacho (Kernel uinput + Puente D-Bus `systemd-run --user`):*
-* **ESC:** Salida de emergencia en hardware.
-* **BRILLO - / +:** Regulación suave de retroiluminación con OSD nativo de GNOME y modulación de hardware `gmux_backlight`.
-* **MIC MUTE:** Silenciamiento instantáneo del micrófono por hardware y control PipeWire (`wpctl`).
-* **VOL - / + / MUTE:** Control acústico de volumen principal.
-* **CALC:** Apertura inmediata de la Calculadora de GNOME.
-* **WEB:** Apertura del navegador web predeterminado en sesión de usuario.
-* **FILES:** Acceso directo al Explorador de Archivos (Carpetas / Nautilus).
-* **DESKS:** Botón de vista de todos los escritorios y espacios de trabajo (GNOME Activities Overview).
-* **MEDIA ⏯ & NEXT ⏭:** Controles multimedia universales con pulso de retención de 25 ms.
+*15 botones táctiles de 114×56 px con diseño iconográfico vectorial cromático y triple despacho (Kernel uinput + Sysfs directo + Puente D-Bus `systemd-run --user`):*
+* **ESC:** Salida de emergencia en hardware con distintivo circular.
+* **BRILLO PANTALLA - / +:** Regulación suave de retroiluminación con iconos solar y OSD nativo de GNOME.
+* **BRILLO TECLADO - / +:** Control táctil de iluminación del teclado físico (`/sys/class/leds/*kbd_backlight*` y `KEY_KBDILLUMDOWN`/`UP`).
+* **MIC MUTE:** Silenciamiento de micrófono por hardware y PipeWire (`wpctl`) con icono de cápsula y soporte.
+* **VOL - / + / MUTE:** Control acústico de volumen con conos de altavoz, ondas sonoras dinámicas y cruz de silenciamiento nítida.
+* **CALCULADORA:** Apertura inmediata de la Calculadora con icono vectorial de pantalla y matriz numérica.
+* **WEB:** Apertura del navegador predeterminado con icono de globo terráqueo y meridianos.
+* **CARPETAS (FILES):** Acceso directo al Explorador de Archivos (Nautilus) con icono de carpeta y solapa.
+* **ESCRITORIOS (DESKS):** Vista general de todos los escritorios y espacios de trabajo (GNOME Activities Overview) con icono de cuadrícula multiventana.
+* **MEDIA ⏯ & NEXT ⏭:** Controles multimedia universales con pulsos uinput de 25 ms.
 
 ---
 
@@ -92,11 +93,11 @@ curl -sSL https://raw.githubusercontent.com/mylnzon58/tuxbar/main/install.sh | s
 ### Opción 2: Paquete Debian Nativo (`.deb`)
 Descarga el paquete precompilado e instálalo con `dpkg` o `apt`:
 ```bash
-# Descargar el paquete v0.2.2
-wget https://github.com/mylnzon58/tuxbar/releases/download/v0.2.2/tuxbar_0.2.2_amd64.deb
+# Descargar el paquete v0.2.3
+wget https://github.com/mylnzon58/tuxbar/releases/download/v0.2.3/tuxbar_0.2.3_amd64.deb
 
 # Instalar y activar de inmediato
-sudo dpkg -i tuxbar_0.2.2_amd64.deb
+sudo dpkg -i tuxbar_0.2.3_amd64.deb
 ```
 
 ### Opción 3: Compilación desde el Código Fuente

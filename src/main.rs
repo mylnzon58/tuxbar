@@ -33,7 +33,7 @@ use crate::widgets::Widget;
 #[derive(Parser)]
 #[command(name = "tuxbar")]
 #[command(author = "Juan José Monzón (@mylnzon58)")]
-#[command(version = "0.2.2")]
+#[command(version = "0.2.3")]
 #[command(about = "The Pure & Dynamic Touch Bar Engine for Linux", long_about = None)]
 struct Cli {
     #[command(subcommand)]
@@ -244,6 +244,36 @@ fn run_test() -> Result<()> {
     run_preview("test")
 }
 
+fn adjust_kbd_backlight(increase: bool) {
+    let candidates = [
+        "/sys/class/leds/:white:kbd_backlight",
+        "/sys/class/leds/apple::kbd_backlight",
+        "/sys/class/leds/smc::kbd_backlight",
+    ];
+    for base in candidates {
+        let p_bright = format!("{}/brightness", base);
+        let p_max = format!("{}/max_brightness", base);
+        if let (Ok(cur_str), Ok(max_str)) = (
+            std::fs::read_to_string(&p_bright),
+            std::fs::read_to_string(&p_max),
+        ) {
+            if let (Ok(cur), Ok(max)) = (
+                cur_str.trim().parse::<i64>(),
+                max_str.trim().parse::<i64>(),
+            ) {
+                let step = (max / 10).max(1);
+                let next = if increase {
+                    (cur + step).min(max)
+                } else {
+                    (cur - step).max(0)
+                };
+                let _ = std::fs::write(&p_bright, next.to_string());
+                break;
+            }
+        }
+    }
+}
+
 fn dispatch_widget_action(
     action: &WidgetAction,
     virtual_kbd: &mut Option<VirtualKeyboard>,
@@ -269,6 +299,24 @@ fn dispatch_widget_action(
             }
             let _ = std::process::Command::new("brightnessctl")
                 .args(["set", "+5%"])
+                .spawn();
+        }
+        WidgetAction::KbdBrightnessDown => {
+            if let Some(ref mut vk) = virtual_kbd {
+                let _ = vk.click_key(evdev::Key::KEY_KBDILLUMDOWN);
+            }
+            adjust_kbd_backlight(false);
+            let _ = std::process::Command::new("brightnessctl")
+                .args(["--device=:white:kbd_backlight", "set", "10%-"])
+                .spawn();
+        }
+        WidgetAction::KbdBrightnessUp => {
+            if let Some(ref mut vk) = virtual_kbd {
+                let _ = vk.click_key(evdev::Key::KEY_KBDILLUMUP);
+            }
+            adjust_kbd_backlight(true);
+            let _ = std::process::Command::new("brightnessctl")
+                .args(["--device=:white:kbd_backlight", "set", "+10%"])
                 .spawn();
         }
         WidgetAction::VolumeDown => {
