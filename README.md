@@ -93,11 +93,11 @@ curl -sSL https://raw.githubusercontent.com/mylnzon58/tuxbar/main/install.sh | s
 ### Opción 2: Paquete Debian Nativo (`.deb`)
 Descarga el paquete precompilado e instálalo con `dpkg` o `apt`:
 ```bash
-# Descargar el paquete v0.2.3
-wget https://github.com/mylnzon58/tuxbar/releases/download/v0.2.3/tuxbar_0.2.3_amd64.deb
+# Descargar el paquete v0.2.4
+wget https://github.com/mylnzon58/tuxbar/releases/download/v0.2.4/tuxbar_0.2.4_amd64.deb
 
 # Instalar y activar de inmediato
-sudo dpkg -i tuxbar_0.2.3_amd64.deb
+sudo dpkg -i tuxbar_0.2.4_amd64.deb
 ```
 
 ### Opción 3: Compilación desde el Código Fuente

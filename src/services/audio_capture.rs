@@ -81,7 +81,7 @@ fn capture_loop(telemetry: Arc<Mutex<AudioTelemetry>>) {
                         }
 
                         let rms = (sum_sq / chunk_size as f32).sqrt();
-                        let is_silent = rms < 0.003;
+                        let is_silent = rms < 0.005;
                         let db = if is_silent {
                             -100.0
                         } else {
@@ -128,44 +128,74 @@ fn capture_loop(telemetry: Arc<Mutex<AudioTelemetry>>) {
     }
 }
 
-fn spawn_audio_process() -> std::io::Result<Child> {
-    let uid = unsafe { libc::geteuid() };
-    if uid == 0 {
-        let target_uid = std::env::var("SUDO_UID")
-            .ok()
-            .and_then(|u| u.parse::<u32>().ok())
-            .unwrap_or(1000);
-        let target_gid = std::env::var("SUDO_GID")
-            .ok()
-            .and_then(|g| g.parse::<u32>().ok())
-            .unwrap_or(1000);
-
-        let runtime_dir = format!("/run/user/{target_uid}");
-
-        if let Ok(child) = Command::new("pw-record")
-            .args([
-                "--target",
-                "@DEFAULT_AUDIO_SINK@",
-                "-",
-                "--rate=8000",
-                "--channels=1",
-                "--format=s16",
-            ])
-            .uid(target_uid)
-            .gid(target_gid)
-            .env("XDG_RUNTIME_DIR", &runtime_dir)
-            .env("PIPEWIRE_RUNTIME_DIR", &runtime_dir)
-            .stdout(Stdio::piped())
-            .stderr(Stdio::null())
-            .spawn()
-        {
-            return Ok(child);
+fn detect_desktop_uid() -> u32 {
+    if let Ok(sudo_uid) = std::env::var("SUDO_UID") {
+        if let Ok(id) = sudo_uid.parse::<u32>() {
+            if id >= 1000 {
+                return id;
+            }
         }
     }
+    if let Ok(entries) = std::fs::read_dir("/run/user") {
+        for entry in entries.flatten() {
+            if let Ok(name) = entry.file_name().into_string() {
+                if let Ok(id) = name.parse::<u32>() {
+                    if id >= 1000 {
+                        return id;
+                    }
+                }
+            }
+        }
+    }
+    1000
+}
 
-    // Direct user execution
-    Command::new("pw-record")
+fn spawn_audio_process() -> std::io::Result<Child> {
+    let uid = unsafe { libc::geteuid() };
+    let (target_uid, target_gid) = if uid == 0 {
+        let u = detect_desktop_uid();
+        let g = std::env::var("SUDO_GID")
+            .ok()
+            .and_then(|g| g.parse::<u32>().ok())
+            .unwrap_or(u);
+        (u, g)
+    } else {
+        (uid, unsafe { libc::getegid() })
+    };
+
+    let runtime_dir = format!("/run/user/{target_uid}");
+    let pulse_server = format!("unix:{runtime_dir}/pulse/native");
+
+    // Tier 1: parec targeting @DEFAULT_MONITOR@
+    // Pure speaker/headphone monitor stream, mathematically isolated from the microphone
+    let mut cmd = Command::new("parec");
+    cmd.args([
+        "--rate=8000",
+        "--channels=1",
+        "--format=s16le",
+        "-d",
+        "@DEFAULT_MONITOR@",
+    ])
+    .env("XDG_RUNTIME_DIR", &runtime_dir)
+    .env("PIPEWIRE_RUNTIME_DIR", &runtime_dir)
+    .env("PULSE_SERVER", &pulse_server)
+    .stdout(Stdio::piped())
+    .stderr(Stdio::null());
+
+    if uid == 0 {
+        cmd.uid(target_uid).gid(target_gid);
+    }
+
+    if let Ok(child) = cmd.spawn() {
+        return Ok(child);
+    }
+
+    // Tier 2: pw-record with stream.capture.sink property
+    let mut pw_cmd = Command::new("pw-record");
+    pw_cmd
         .args([
+            "-P",
+            "{ stream.capture.sink=true }",
             "--target",
             "@DEFAULT_AUDIO_SINK@",
             "-",
@@ -173,9 +203,14 @@ fn spawn_audio_process() -> std::io::Result<Child> {
             "--channels=1",
             "--format=s16",
         ])
-        .env("XDG_RUNTIME_DIR", "/run/user/1000")
-        .env("PIPEWIRE_RUNTIME_DIR", "/run/user/1000")
+        .env("XDG_RUNTIME_DIR", &runtime_dir)
+        .env("PIPEWIRE_RUNTIME_DIR", &runtime_dir)
         .stdout(Stdio::piped())
-        .stderr(Stdio::null())
-        .spawn()
+        .stderr(Stdio::null());
+
+    if uid == 0 {
+        pw_cmd.uid(target_uid).gid(target_gid);
+    }
+
+    pw_cmd.spawn()
 }
