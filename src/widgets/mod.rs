@@ -1,4 +1,5 @@
 pub mod clock;
+pub mod control_deck;
 pub mod cyberdeck;
 pub mod fn_keys;
 pub mod gallery;

@@ -796,7 +796,7 @@
     <div class="container nav-wrap">
       <a href="#" class="logo">
         <span>🐧 TuxBar</span>
-        <span class="logo-badge">v0.2.1</span>
+        <span class="logo-badge">v0.2.2</span>
       </a>
 
       <nav>
@@ -857,13 +857,13 @@
       </div>
 
       <div class="install-actions">
-        <a href="tuxbar_0.2.1_amd64.deb" class="btn-primary" download>
+        <a href="tuxbar_0.2.2_amd64.deb" class="btn-primary" download>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
             <polyline points="7 10 12 15 17 10"></polyline>
             <line x1="12" y1="15" x2="12" y2="3"></line>
           </svg>
-          <span>Descargar Paquete .deb (v0.2.1)</span>
+          <span>Descargar Paquete .deb (v0.2.2)</span>
         </a>
         <a href="#modos" class="btn-secondary">
           <span>Ver Capturas Reales</span>
@@ -888,6 +888,7 @@
 
         <div class="mode-pills">
           <button class="mode-pill active" onclick="switchPreview('prosplit', this)">Pro Split</button>
+          <button class="mode-pill" onclick="switchPreview('controldeck', this)">Control Deck</button>
           <button class="mode-pill" onclick="switchPreview('audiophile', this)">Audiophile 32-Band</button>
           <button class="mode-pill" onclick="switchPreview('gallery', this)">Gallery Scrubber</button>
           <button class="mode-pill" onclick="switchPreview('cyberdeck', this)">Cyberdeck 12-Core</button>
@@ -1021,7 +1022,7 @@
     <section>
       <div class="section-head">
         <div class="section-eyebrow">Modos Diseñados al Milímetro</div>
-        <h2 class="section-title">5 experiencias ergonómicas a 60 píxeles de altura</h2>
+        <h2 class="section-title">6 experiencias ergonómicas a 60 píxeles de altura</h2>
         <p class="section-desc">
           Aprovechamiento integral del área vertical de la Touch Bar: botones de 58 px de alto, dianas táctiles amplias y respuesta visual luminiscente al tocar el cristal.
         </p>
@@ -1042,6 +1043,12 @@
             <td>Píldora de música + Mini-Ecualizador Heatmap + 12 Cores CPU + Reloj tipográfico</td>
             <td>Play/Pause, Next/Prev con pulso uinput de 25ms, Esc directo y toque en reloj para ciclar</td>
             <td>Productividad diaria y programación</td>
+          </tr>
+          <tr>
+            <td><strong>Control Deck</strong></td>
+            <td>13 accesos rápidos táctiles: Brillo -/+, Mic Mute, Volumen -/+/Mute, Calculadora, Navegador, Carpetas, Escritorios y Media</td>
+            <td>Pulsación táctil directa con doble despacho (Kernel uinput + puente D-Bus systemd-run en sesión de usuario)</td>
+            <td>Control total del sistema, ergonomía y accesos rápidos directos</td>
           </tr>
           <tr>
             <td><strong>Audiophile</strong></td>
@@ -1099,13 +1106,13 @@
           <h3>Opción 2: Paquete Debian Nativo (.deb)</h3>
           <p>Para usuarios que prefieren la gestión de paquetes tradicional de Ubuntu:</p>
           <div class="code-box">
-            sudo dpkg -i tuxbar_0.2.1_amd64.deb<br>
+            sudo dpkg -i tuxbar_0.2.2_amd64.deb<br>
             # O con apt para resolución de dependencias:<br>
-            sudo apt install ./tuxbar_0.2.1_amd64.deb
+            sudo apt install ./tuxbar_0.2.2_amd64.deb
           </div>
           <p style="margin-top: 12px;">
-            <a href="tuxbar_0.2.1_amd64.deb" class="btn-primary" style="padding: 8px 16px; font-size: 0.85rem;" download>
-              Descargar tuxbar_0.2.1_amd64.deb (1.8 MB)
+            <a href="tuxbar_0.2.2_amd64.deb" class="btn-primary" style="padding: 8px 16px; font-size: 0.85rem;" download>
+              Descargar tuxbar_0.2.2_amd64.deb (1.8 MB)
             </a>
           </p>
         </div>
@@ -1327,6 +1334,10 @@
       prosplit: {
         src: 'assets/tuxbar_preview_prosplit.png',
         desc: '⚡ Modo Pro Split: Reproductor musical universal (Next/Prev 25ms), mini-espectro dinámico, telemetría de silicio y reloj tipográfico.'
+      },
+      controldeck: {
+        src: 'assets/tuxbar_preview_controldeck.png',
+        desc: '🎛️ Modo Control Deck: 13 botones táctiles (Brillo -/+, Mic Mute, Volumen -/+/Mute, Calculadora, Navegador, Carpetas, Escritorios y Media).'
       },
       audiophile: {
         src: 'assets/tuxbar_preview_audiophile.png',

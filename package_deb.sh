@@ -8,7 +8,7 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 DIST_DIR="$SCRIPT_DIR/dist"
-PKG_DIR="/tmp/tuxbar_0.2.1_amd64"
+PKG_DIR="/tmp/tuxbar_0.2.2_amd64"
 
 echo "=== [1/4] Compilando binario optimizado release ==="
 cd "$SCRIPT_DIR"
@@ -52,7 +52,7 @@ install -m 644 "$SCRIPT_DIR/tuxbar.service" "$PKG_DIR/etc/systemd/system/tuxbar.
 # 4. Control metadata
 cat << 'EOF' > "$PKG_DIR/DEBIAN/control"
 Package: tuxbar
-Version: 0.2.1
+Version: 0.2.2
 Section: utils
 Priority: optional
 Architecture: amd64
@@ -61,6 +61,7 @@ Description: Pure-Rust dynamic Touch Bar engine for Apple T2 MacBooks on Linux
  TuxBar transforms the Apple Touch Bar into an interactive widget engine:
  32-band Audiophile equalizer, 12-core CPU telemetry matrix, full-height
  F1-F12 keys with hardware Fn integration, photo filmstrip scrubber,
+ Control Deck system shortcuts (brightness, mic, volume, calc, browser, files, spaces),
  and high-DPI typographic clock.
 Homepage: https://github.com/mylnzon58/tuxbar
 EOF
@@ -91,7 +92,7 @@ EOF
 chmod 755 "$PKG_DIR/DEBIAN/prerm"
 
 echo "=== [3/4] Empaquetando con dpkg-deb ==="
-DEB_FILE="$DIST_DIR/tuxbar_0.2.1_amd64.deb"
+DEB_FILE="$DIST_DIR/tuxbar_0.2.2_amd64.deb"
 dpkg-deb --build "$PKG_DIR" "$DEB_FILE"
 rm -rf "$PKG_DIR"
 

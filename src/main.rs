@@ -21,6 +21,7 @@ use crate::graphics::{FontEngine, Framebuffer};
 use crate::services::{AudioCaptureService, MprisClient, TelemetryProvider};
 use crate::types::{ActiveTouch, BarMode, Color, Rect, TouchPhase, WidgetAction};
 use crate::widgets::clock::ClockWidget;
+use crate::widgets::control_deck::ControlDeckWidget;
 use crate::widgets::cyberdeck::CyberdeckWidget;
 use crate::widgets::fn_keys::FnKeysWidget;
 use crate::widgets::gallery::GalleryWidget;
@@ -32,7 +33,7 @@ use crate::widgets::Widget;
 #[derive(Parser)]
 #[command(name = "tuxbar")]
 #[command(author = "Juan José Monzón (@mylnzon58)")]
-#[command(version = "0.2.0")]
+#[command(version = "0.2.2")]
 #[command(about = "The Pure & Dynamic Touch Bar Engine for Linux", long_about = None)]
 struct Cli {
     #[command(subcommand)]
@@ -226,12 +227,147 @@ fn run_preview(prefix: &str) -> Result<()> {
     clock_widget.render(&mut fb, clock_rect, &font);
     fb.save_ppm(format!("{prefix}_gallery.ppm"))?;
 
+    // 6. Preview Control Deck
+    fb.clear(Color::BLACK);
+    let control_deck = ControlDeckWidget::new();
+    let deck_rect = Rect::new(2, 1, 1778, 58);
+    let deck_mode_rect = Rect::new(1786, 1, 220, 58);
+    control_deck.render(&mut fb, deck_rect, &font);
+    render_mode_button(&mut fb, deck_mode_rect, BarMode::ControlDeck, &font);
+    fb.save_ppm(format!("{prefix}_controldeck.ppm"))?;
+
     println!("[TuxBar] Frame preview export complete ✓");
     Ok(())
 }
 
 fn run_test() -> Result<()> {
     run_preview("test")
+}
+
+fn dispatch_widget_action(
+    action: &WidgetAction,
+    virtual_kbd: &mut Option<VirtualKeyboard>,
+    mpris: &MprisClient,
+) {
+    match action {
+        WidgetAction::Escape => {
+            if let Some(ref mut vk) = virtual_kbd {
+                let _ = vk.click_key(evdev::Key::KEY_ESC);
+            }
+        }
+        WidgetAction::BrightnessDown => {
+            if let Some(ref mut vk) = virtual_kbd {
+                let _ = vk.click_key(evdev::Key::KEY_BRIGHTNESSDOWN);
+            }
+            let _ = std::process::Command::new("brightnessctl")
+                .args(["set", "5%-"])
+                .spawn();
+        }
+        WidgetAction::BrightnessUp => {
+            if let Some(ref mut vk) = virtual_kbd {
+                let _ = vk.click_key(evdev::Key::KEY_BRIGHTNESSUP);
+            }
+            let _ = std::process::Command::new("brightnessctl")
+                .args(["set", "+5%"])
+                .spawn();
+        }
+        WidgetAction::VolumeDown => {
+            if let Some(ref mut vk) = virtual_kbd {
+                let _ = vk.click_key(evdev::Key::KEY_VOLUMEDOWN);
+            }
+            let _ = std::process::Command::new("wpctl")
+                .args(["set-volume", "@DEFAULT_AUDIO_SINK@", "5%-"])
+                .spawn();
+        }
+        WidgetAction::VolumeUp => {
+            if let Some(ref mut vk) = virtual_kbd {
+                let _ = vk.click_key(evdev::Key::KEY_VOLUMEUP);
+            }
+            let _ = std::process::Command::new("wpctl")
+                .args(["set-volume", "@DEFAULT_AUDIO_SINK@", "5%+"])
+                .spawn();
+        }
+        WidgetAction::ToggleMute => {
+            if let Some(ref mut vk) = virtual_kbd {
+                let _ = vk.click_key(evdev::Key::KEY_MUTE);
+            }
+            let _ = std::process::Command::new("wpctl")
+                .args(["set-mute", "@DEFAULT_AUDIO_SINK@", "toggle"])
+                .spawn();
+        }
+        WidgetAction::ToggleMicMute => {
+            if let Some(ref mut vk) = virtual_kbd {
+                let _ = vk.click_key(evdev::Key::KEY_MICMUTE);
+            }
+            let _ = std::process::Command::new("wpctl")
+                .args(["set-mute", "@DEFAULT_AUDIO_SOURCE@", "toggle"])
+                .spawn();
+        }
+        WidgetAction::LaunchCalc => {
+            if let Some(ref mut vk) = virtual_kbd {
+                let _ = vk.click_key(evdev::Key::KEY_CALC);
+            }
+            let _ = std::process::Command::new("systemd-run")
+                .args(["--user", "--no-block", "gnome-calculator"])
+                .spawn();
+        }
+        WidgetAction::LaunchBrowser => {
+            if let Some(ref mut vk) = virtual_kbd {
+                let _ = vk.click_key(evdev::Key::KEY_WWW);
+            }
+            let _ = std::process::Command::new("systemd-run")
+                .args(["--user", "--no-block", "xdg-open", "https://google.com"])
+                .spawn();
+        }
+        WidgetAction::LaunchFiles => {
+            if let Some(ref mut vk) = virtual_kbd {
+                let _ = vk.click_key(evdev::Key::KEY_FILE);
+            }
+            let _ = std::process::Command::new("systemd-run")
+                .args(["--user", "--no-block", "nautilus"])
+                .spawn();
+        }
+        WidgetAction::ToggleOverview => {
+            if let Some(ref mut vk) = virtual_kbd {
+                let _ = vk.click_key(evdev::Key::KEY_LEFTMETA);
+            }
+            let _ = std::process::Command::new("systemd-run")
+                .args([
+                    "--user",
+                    "--no-block",
+                    "gdbus",
+                    "call",
+                    "--session",
+                    "--dest",
+                    "org.gnome.Shell",
+                    "--object-path",
+                    "/org/gnome/Shell",
+                    "--method",
+                    "org.gnome.Shell.Eval",
+                    "Main.overview.toggle()",
+                ])
+                .spawn();
+        }
+        WidgetAction::PlayPause => {
+            mpris.play_pause();
+            if let Some(ref mut vk) = virtual_kbd {
+                let _ = vk.click_key(evdev::Key::KEY_PLAYPAUSE);
+            }
+        }
+        WidgetAction::NextTrack => {
+            mpris.next();
+            if let Some(ref mut vk) = virtual_kbd {
+                let _ = vk.click_key(evdev::Key::KEY_NEXTSONG);
+            }
+        }
+        WidgetAction::PreviousTrack => {
+            mpris.previous();
+            if let Some(ref mut vk) = virtual_kbd {
+                let _ = vk.click_key(evdev::Key::KEY_PREVIOUSSONG);
+            }
+        }
+        _ => {}
+    }
 }
 
 fn render_mode_button(fb: &mut Framebuffer, rect: Rect, mode: BarMode, font: &FontEngine) {
@@ -310,6 +446,7 @@ fn run_daemon(card_path: &str, input_path: &str) -> Result<()> {
     let mut cyberdeck = CyberdeckWidget::new();
     let mut gallery = GalleryWidget::new();
     let mut fn_keys = FnKeysWidget::new();
+    let mut control_deck = ControlDeckWidget::new();
     let mut stats_widget = SystemStatsWidget::new();
     let mut clock_widget = ClockWidget;
 
@@ -338,7 +475,7 @@ fn run_daemon(card_path: &str, input_path: &str) -> Result<()> {
         }
 
         // Dynamic layout definitions based on mode (full 58px height)
-        let (mode_btn_rect, clock_rect) = if current_mode == BarMode::FnKeys {
+        let (mode_btn_rect, clock_rect) = if current_mode == BarMode::FnKeys || current_mode == BarMode::ControlDeck {
             (Rect::new(1786, 1, 220, 58), Rect::new(0, 0, 0, 0))
         } else {
             (Rect::new(1620, 1, 182, 58), Rect::new(1806, 1, 198, 58))
@@ -376,6 +513,16 @@ fn run_daemon(card_path: &str, input_path: &str) -> Result<()> {
 
                     // Dispatch to mode-specific widgets
                     match current_mode {
+                        BarMode::ControlDeck => {
+                            let deck_rect = Rect::new(2, 1, 1778, 58);
+                            if deck_rect.contains(px, py) {
+                                let action = control_deck.handle_touch(&event, deck_rect);
+                                if event.phase == TouchPhase::Down && action != WidgetAction::None {
+                                    println!("[TuxBar] Control Deck Action Triggered: {:?}", action);
+                                    dispatch_widget_action(&action, &mut virtual_kbd, &mpris);
+                                }
+                            }
+                        }
                         BarMode::FnKeys => {
                             let fn_rect = Rect::new(2, 1, 1778, 58);
                             if fn_rect.contains(px, py) {
@@ -524,6 +671,10 @@ fn run_daemon(card_path: &str, input_path: &str) -> Result<()> {
         fb.clear(Color::BLACK);
 
         match current_mode {
+            BarMode::ControlDeck => {
+                let deck_rect = Rect::new(2, 1, 1778, 58);
+                control_deck.render(&mut fb, deck_rect, &font);
+            }
             BarMode::FnKeys => {
                 let fn_rect = Rect::new(2, 1, 1778, 58);
                 fn_keys.render(&mut fb, fn_rect, &font);

@@ -73,6 +73,7 @@ impl Color {
 pub enum BarMode {
     #[default]
     ProSplit,
+    ControlDeck,
     FnKeys,
     Audiophile,
     Cyberdeck,
@@ -83,7 +84,8 @@ impl BarMode {
     #[must_use]
     pub fn next(self) -> Self {
         match self {
-            Self::ProSplit => Self::FnKeys,
+            Self::ProSplit => Self::ControlDeck,
+            Self::ControlDeck => Self::FnKeys,
             Self::FnKeys => Self::Audiophile,
             Self::Audiophile => Self::Cyberdeck,
             Self::Cyberdeck => Self::Gallery,
@@ -95,6 +97,7 @@ impl BarMode {
     pub fn label(self) -> &'static str {
         match self {
             Self::ProSplit => "PRO WIDGETS",
+            Self::ControlDeck => "CONTROL DECK",
             Self::FnKeys => "F1-F12 KEYS",
             Self::Audiophile => "AUDIOPHILE",
             Self::Cyberdeck => "CYBERDECK",
@@ -135,16 +138,16 @@ pub enum WidgetAction {
     PreviousTrack,
     #[allow(dead_code)]
     SeekRatio(u32),
-    #[allow(dead_code)]
     BrightnessUp,
-    #[allow(dead_code)]
     BrightnessDown,
-    #[allow(dead_code)]
     VolumeUp,
-    #[allow(dead_code)]
     VolumeDown,
-    #[allow(dead_code)]
     ToggleMute,
+    ToggleMicMute,
+    LaunchCalc,
+    LaunchBrowser,
+    LaunchFiles,
+    ToggleOverview,
     ToggleMode,
 }
 
