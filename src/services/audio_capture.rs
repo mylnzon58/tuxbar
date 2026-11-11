@@ -62,6 +62,8 @@ fn capture_loop(telemetry: Arc<Mutex<AudioTelemetry>>) {
         freqs[i] = 60.0 * (3800.0 / 60.0f32).powf(t);
     }
 
+    let mut running_peak = 0.12f32;
+
     loop {
         let child_res = spawn_audio_process();
         match child_res {
@@ -81,7 +83,7 @@ fn capture_loop(telemetry: Arc<Mutex<AudioTelemetry>>) {
                         }
 
                         let rms = (sum_sq / chunk_size as f32).sqrt();
-                        let is_silent = rms < 0.005;
+                        let is_silent = rms < 0.0008;
                         let db = if is_silent {
                             -100.0
                         } else {
@@ -90,6 +92,9 @@ fn capture_loop(telemetry: Arc<Mutex<AudioTelemetry>>) {
 
                         let mut band_values = [0.0f32; 32];
                         if !is_silent {
+                            let mut frame_max = 0.001f32;
+                            let mut raw_mags = [0.0f32; 32];
+
                             // Compute magnitude at each frequency band using correlation
                             for (b, &freq) in freqs.iter().enumerate() {
                                 let w = 2.0 * std::f32::consts::PI * freq / 8000.0;
@@ -101,10 +106,27 @@ fn capture_loop(telemetry: Arc<Mutex<AudioTelemetry>>) {
                                     im -= s * phase.sin();
                                 }
                                 let mag = (re * re + im * im).sqrt() / (chunk_size as f32 / 4.0);
-                                let weight = if b < 8 { 1.4 } else if b < 20 { 1.1 } else { 0.85 };
-                                let raw_val = (mag * weight).clamp(0.0, 1.0);
-                                // Perceptual dynamic range boost for visible, bouncy bars at all volume levels
-                                let boosted = (raw_val * 2.5).powf(0.72).clamp(0.0, 1.0);
+                                let weight = if b < 8 { 1.35 } else if b < 20 { 1.1 } else { 0.90 };
+                                let raw_val = mag * weight;
+                                if raw_val > frame_max {
+                                    frame_max = raw_val;
+                                }
+                                raw_mags[b] = raw_val;
+                            }
+
+                            // Dynamic AGC / Perceptual auto-normalizer:
+                            // Fast attack (tracks new loud beats immediately), slow decay (gradually boosts quiet passages)
+                            if frame_max > running_peak {
+                                running_peak = frame_max;
+                            } else {
+                                running_peak = (running_peak * 0.985 + frame_max * 0.015).max(0.04);
+                            }
+
+                            // Adaptive headroom gain: quiet volume gets up to 8.5x gain, loud volume gets ~1.8x
+                            let norm_gain = (0.75 / running_peak).clamp(1.8, 8.5);
+
+                            for (b, &raw_val) in raw_mags.iter().enumerate() {
+                                let boosted = ((raw_val * norm_gain).powf(0.55)).clamp(0.0, 1.0);
                                 band_values[b] = boosted;
                             }
                         }
