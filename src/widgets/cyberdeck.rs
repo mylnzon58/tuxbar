@@ -114,9 +114,11 @@ impl Widget for CyberdeckWidget {
         } else {
             0.0
         };
-        let mem_bar_rect = Rect::new(cur_x, btn_y + 36, 180, 8);
+        let mem_w = font.measure_text_width(&mem_str, 18.0);
+        let mem_bar_w = (mem_w as u32).max(180);
+        let mem_bar_rect = Rect::new(cur_x, btn_y + 36, mem_bar_w, 8);
         fb.draw_progress_bar(mem_bar_rect, mem_ratio, Color::DARK_GRAY, Color::PURPLE);
-        cur_x += 200;
+        cur_x += mem_bar_w as i32 + 42;
 
         // 5. Heartbeat Activity Pulse
         let pulse_alpha = ((self.pulse.sin() * 0.5 + 0.5) * 200.0) as u8 + 55;
