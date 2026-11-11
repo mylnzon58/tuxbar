@@ -117,6 +117,7 @@ impl Framebuffer {
         }
     }
 
+    #[allow(dead_code)]
     pub fn draw_line(&mut self, mut x0: i32, mut y0: i32, x1: i32, y1: i32, color: Color) {
         let dx = (x1 - x0).abs();
         let sx = if x0 < x1 { 1 } else { -1 };
@@ -141,6 +142,7 @@ impl Framebuffer {
         }
     }
 
+    #[allow(dead_code)]
     pub fn draw_circle(&mut self, cx: i32, cy: i32, radius: i32, color: Color) {
         let mut x = radius;
         let mut y = 0;
@@ -165,6 +167,7 @@ impl Framebuffer {
         }
     }
 
+    #[allow(dead_code)]
     pub fn fill_circle(&mut self, cx: i32, cy: i32, radius: i32, color: Color) {
         let r2 = radius * radius;
         let x_start = (cx - radius).max(0);
