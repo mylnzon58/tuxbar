@@ -27,11 +27,11 @@ Hasta hoy, utilizar Linux en una MacBook Pro con Touch Bar significaba conformar
 
 ### 🎵 2. Modo Audiophile (Ecualizador Reactivo en Vivo con Decibeles Reales)
 ![TuxBar Audiophile Mode](assets/tuxbar_preview_audiophile.png)
-*Ecualizador de 32 bandas impulsado por audio PCM real de PipeWire (`@DEFAULT_AUDIO_SINK@`). Muestra insignia de decibeles reales (`dBFS`), retención de picos (*peak-hold*) y flatline instantáneo en pausa o silencio. Cero sonido emitido a los altavoces.*
+*Ecualizador de 32 bandas impulsado por audio PCM real de PipeWire (`@DEFAULT_AUDIO_SINK@`). Incorpora escala cromática Heatmap de 10 segmentos (Cian -> Verde -> Lima -> Ámbar -> Naranja -> Carmesí), indicador dinámico de decibeles reales (`dBFS`) con coloración por potencia, retención de picos flotantes (*peak-hold*) y flatline instantáneo en silencio. Cero sonido emitido a los altavoces.*
 
 ### 📷 3. Modo Gallery (Photo Scrubber de Capturas e Imágenes)
 ![TuxBar Gallery Photo Scrubber Mode](assets/tuxbar_preview_gallery.png)
-*Replica la función icónica de macOS Photos en Linux. Escanea capturas reales en `~/Pictures/Capturas de pantalla`, renderiza miniaturas de 84×54 px con bordes redondeados y permite deslizar con inercia táctil. Al presionar `[ ABRIR ]`, la imagen se lanza inmediatamente en el visor del escritorio GNOME.*
+*Replica la función icónica de macOS Photos en Linux. Escanea capturas reales en `~/Pictures/Capturas de pantalla`, renderiza miniaturas de 84×54 px con bordes redondeados y permite deslizar con inercia táctil. Al presionar `[ ABRIR ]` o realizar doble toque en una foto, la imagen se abre instantáneamente en el visor de imágenes nativo de tu escritorio GNOME (Eye of GNOME / Loupe).*
 
 ### 💻 4. Modo Cyberdeck (Matriz de Silicio Núcleo por Núcleo)
 ![TuxBar Cyberdeck Mode](assets/tuxbar_preview_cyberdeck.png)
@@ -40,6 +40,30 @@ Hasta hoy, utilizar Linux en una MacBook Pro con Touch Bar significaba conformar
 ### ⌨️ 5. Modo F1-F12 Keys (Auto-conmutación por Hardware con Tecla Fn Física)
 ![TuxBar Fn Keys Mode](assets/tuxbar_preview_fnkeys.png)
 *13 teclas estándar completas de 58 px de altura con tipografía vectorial de alta definición. El listener de hardware monitorea el teclado interno de Apple: **al mantener pulsada la tecla física `Fn`, la barra cambia a las teclas de función F1-F12 en 0 ms y regresa a tus widgets al soltarla**.*
+
+---
+
+## 🌟 Novedades y Mejoras Técnicas en la Versión v0.2.1
+
+La versión **v0.2.1** consolida la madurez de TuxBar como un entorno táctil interactivo de nivel de producción:
+
+* 🖼️ **Puente Desacoplado de Sesión Gráfica (`systemd-run --user`):**
+  Lanzamiento instantáneo de imágenes y capturas desde la barra táctil hacia el escritorio activo de GNOME (Wayland y X11). Al presionar `[ ABRIR ]` o dar doble toque a una miniatura, TuxBar delega la invocación al gestor de sesión del usuario con variables completas de entorno (`HOME`, `WAYLAND_DISPLAY`, `DBUS`), priorizando el visor nativo (`/usr/bin/eog` o `loupe`) y eliminando bloqueos de sandbox en daemons de sistema.
+* 🌈 **Gradiente Térmico Heatmap en Espectro (Studio VU Meter):**
+  El ecualizador de 32 bandas y el mini-espectro integran una escala cromática de 10 segmentos con transición gradual según la potencia del audio:
+  - `0 - 1`: Azul Cian Eléctrico *(Sub-graves)*
+  - `2 - 3`: Verde Neón *(Medios-bajos)*
+  - `4 - 5`: Cyber Lime *(Medios)*
+  - `6 - 7`: Ámbar Dorado *(Medios-altos)*
+  - `8`: Naranja de Alta Potencia *(Agudos enérgicos)*
+  - `9`: Rojo Carmesí *(Picos de techo)*  
+  Incorpora puntos flotantes dinámicos de retención de picos (*peak-hold*) y badge dinámico de decibeles con alerta de saturación de potencia.
+* ⏭️ **Control Multimedia Universal con Pulso de Retención de 25 ms:**
+  Solución definitiva al avance y retroceso de pista (`KEY_NEXTSONG`, `KEY_PREVIOUSSONG`, `KEY_PLAYPAUSE`): TuxBar introduce un pulso de retención de 25 ms en `/dev/uinput` y difusión dual por D-Bus MPRIS. Los cambios de canción responden con 100% de efectividad en Spotify, YouTube (en Chrome/Chromium/Brave), Firefox y reproductores nativos.
+* 🏷️ **Cápsula de Metadatos de Galería con Recorte Anticolisión:**
+  El título de la foto y el contador (`X/Y`) se agrupan en una tarjeta encapsulada con recorte tipográfico dinámico (`draw_text_clipped`), evitando colisiones o solapamientos con la tira filmstrip de miniaturas.
+* 🔒 **Auditoría Estricta de Privacidad y Portabilidad Universal:**
+  Eliminación total de rutas personales o nombres de usuario hardcodeados. Toda la sesión, rutas de imágenes y bus D-Bus se descubren en tiempo de ejecución a través de llamadas de bajo nivel a la API POSIX `libc::getpwuid(target_uid)`.
 
 ---
 
@@ -106,8 +130,10 @@ TuxBar fue diseñado bajo estrictos estándares de ingeniería de software para 
   La comunicación con la pantalla se realiza exclusivamente mediante la API estándar de dumb buffers del kernel (`DRM_IOCTL_MODE_CREATE_DUMB`) en `/dev/dri/card*` administrado por `appletbdrm`. Los voltajes y frecuencias de refresco se mantienen siempre dentro de los parámetros seguros de fábrica.
 * **Audio Telemetry Pasivo (PipeWire PCM):**
   `AudioCaptureService` monitorea pasivamente el flujo de audio de salida a 8000 Hz / 16-bit mono desde `@DEFAULT_AUDIO_SINK@`. No emite ni reproduce sonidos a los altavoces, evitando ruidos o sobrecargas en los amplificadores del MacBook Pro.
-* **Teclado Virtual de Hardware (`/dev/uinput`):**
-  Al presionar las teclas táctiles `Esc` o `F1` a `F12`, TuxBar emite eventos de hardware genuinos (`evdev::Key`) al kernel, garantizando compatibilidad con atajos de teclado, terminales, editores y entornos gráficos.
+* **Teclado Virtual de Hardware (`/dev/uinput`) & Temporización Real:**
+  Al presionar las teclas táctiles `Esc`, `F1` a `F12` o controles de música (`Next`, `Prev`, `PlayPause`), TuxBar emite eventos de hardware genuinos (`evdev::Key`) al kernel con un pulso de retención de 25 ms entre KeyDown y KeyUp, garantizando compatibilidad absoluta con compositores Wayland, terminales y navegadores (Chrome, Firefox, Spotify).
+* **Puente de Sesión Gráfica y Desacoplamiento de Daemon (`systemd-run --user`):**
+  Para interactuar con el escritorio activo sin comprometer la seguridad ni sufrir bloqueos de permisos (`ProtectHome`), TuxBar delega la apertura de archivos al gestor de sesión `systemd --user` del usuario activo resuelto mediante `libc::getpwuid`. Esto permite lanzar visores gráficos nativos (`eog`, `loupe`) con acceso total a sockets Wayland y D-Bus.
 
 ---
 

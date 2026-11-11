@@ -951,9 +951,9 @@
               <line x1="8" y1="23" x2="16" y2="23"/>
             </svg>
           </div>
-          <h3>Telemetría PipeWire PCM</h3>
+          <h3>Telemetría PipeWire PCM & VU Heatmap</h3>
           <p>
-            Monitoreo pasivo del flujo de audio a 8000 Hz / 16-bit mono. Calcula decibeles reales (dBFS) y correlación de frecuencias de 60 Hz a 3800 Hz. Cero sonido emitido a los altavoces.
+            Monitoreo pasivo del flujo de audio a 8000 Hz / 16-bit mono. Calcula decibeles reales (dBFS), correlación espectral y gradiente cromático térmico de 10 segmentos (Cian a Carmesí) con retención de picos. Cero sonido emitido a los altavoces.
           </p>
         </div>
 
@@ -981,9 +981,9 @@
               <polyline points="21 15 16 10 5 21"/>
             </svg>
           </div>
-          <h3>Photo Scrubber Táctil</h3>
+          <h3>Photo Scrubber & Desktop Bridge</h3>
           <p>
-            Escanea capturas de pantalla de <code>~/Pictures</code>, renderiza miniaturas con bordes redondeados y permite deslizar el dedo en la barra. Al pulsar <code>[ ABRIR ]</code> se lanza en el visor de tu escritorio.
+            Escanea capturas reales en <code>~/Pictures</code>, renderiza miniaturas de 84×54 px y delega la apertura con <code>systemd-run --user</code> al visor nativo GNOME (Eye of GNOME / Loupe) con variables de sesión Wayland/X11 y cero datos hardcodeados.
           </p>
         </div>
 
@@ -1009,9 +1009,9 @@
               <polyline points="8 6 2 12 8 18"/>
             </svg>
           </div>
-          <h3>Virtual uinput Keyboard</h3>
+          <h3>Virtual uinput & Timings Reales</h3>
           <p>
-            Crea un dispositivo de teclado virtual mediante <code>/dev/uinput</code>. Las pulsaciones de <code>Esc</code> o <code>F1-F12</code> son recibidas por el kernel como eventos de teclado de hardware genuinos.
+            Dispositivo de teclado virtual mediante <code>/dev/uinput</code> con pulso de retención de 25 ms. Emite pulsaciones físicas genuinas de <code>Esc</code>, <code>F1-F12</code> y control de canciones universal (Spotify, YouTube/Chrome) sin caídas de eventos.
           </p>
         </div>
       </div>
@@ -1039,20 +1039,20 @@
         <tbody>
           <tr>
             <td><strong>Pro Split</strong></td>
-            <td>Píldora de música + Mini-Ecualizador + 12 Cores CPU + Reloj tipográfico</td>
-            <td>Play/Pause, Next, Prev, Esc directo y toque en reloj para ciclar</td>
+            <td>Píldora de música + Mini-Ecualizador Heatmap + 12 Cores CPU + Reloj tipográfico</td>
+            <td>Play/Pause, Next/Prev con pulso uinput de 25ms, Esc directo y toque en reloj para ciclar</td>
             <td>Productividad diaria y programación</td>
           </tr>
           <tr>
             <td><strong>Audiophile</strong></td>
-            <td>32 barras de espectro reactivo + Badge de decibeles reales + Retención de picos</td>
+            <td>32 barras con gradiente térmico de 10 colores + Badge dinámico de decibeles + Retención de picos</td>
             <td>Toque en el espectro conmuta reproducción, scrubber de pista</td>
             <td>Música en Spotify / YouTube Music</td>
           </tr>
           <tr>
             <td><strong>Gallery</strong></td>
-            <td>Tira filmstrip de capturas de pantalla + Botones <code>◀</code>, <code>ABRIR</code>, <code>▶</code></td>
-            <td>Deslizar horizontalmente con inercia, tocar miniatura para abrir en GNOME</td>
+            <td>Tira filmstrip anticolisión con cápsula de título + Botones <code>◀</code>, <code>ABRIR</code>, <code>▶</code></td>
+            <td>Deslizar con inercia, toque en ABRIR o doble toque en miniatura para abrir en GNOME vía <code>systemd-run</code></td>
             <td>Revisar capturas de código y fotos</td>
           </tr>
           <tr>
@@ -1326,15 +1326,15 @@
     const previews = {
       prosplit: {
         src: 'assets/tuxbar_preview_prosplit.png',
-        desc: '⚡ Modo Pro Split: Reproductor musical, mini-espectro dinámico, telemetría de silicio y reloj tipográfico.'
+        desc: '⚡ Modo Pro Split: Reproductor musical universal (Next/Prev 25ms), mini-espectro dinámico, telemetría de silicio y reloj tipográfico.'
       },
       audiophile: {
         src: 'assets/tuxbar_preview_audiophile.png',
-        desc: '🎵 Modo Audiophile: 32 bandas reactivas a audio PipeWire (dBFS), picos flotantes y badge de decibeles.'
+        desc: '🎵 Modo Audiophile: 32 bandas con gradiente térmico Heatmap de 10 colores (PipeWire dBFS), picos flotantes y badge dinámico de potencia.'
       },
       gallery: {
         src: 'assets/tuxbar_preview_gallery.png',
-        desc: '📷 Modo Gallery: Scrubber táctil de capturas reales con navegación táctil y botón ABRIR en escritorio.'
+        desc: '📷 Modo Gallery: Scrubber de capturas con cápsula anticolisión, navegación táctil, doble toque y botón ABRIR en GNOME.'
       },
       cyberdeck: {
         src: 'assets/tuxbar_preview_cyberdeck.png',
