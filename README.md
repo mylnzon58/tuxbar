@@ -7,6 +7,7 @@
 [![DRM](https://img.shields.io/badge/DRM-KMS_Zero_C_Deps-emerald.svg?style=flat-square&logo=linux)](https://en.wikipedia.org/wiki/Direct_Rendering_Manager)
 [![Ubuntu 24.04](https://img.shields.io/badge/Ubuntu-24.04_LTS_Verified-E95420.svg?style=flat-square&logo=ubuntu)](https://ubuntu.com/)
 [![Web / Live Previews](https://img.shields.io/badge/Documentaci%C3%B3n-GitHub_Pages-77216F.svg?style=flat-square)](https://mylnzon58.github.io/tuxbar/)
+[![Sponsor on Patreon](https://img.shields.io/badge/Patreon-Planes_para_Sponsors-FF424D.svg?style=flat-square&logo=patreon)](https://www.patreon.com/JuanjoClassic)
 
 > **Autor:** [Juan José Monzón (@mylnzon58)](https://github.com/mylnzon58)  
 > **Hardware:** Apple MacBook Pro 16,1 (A2141) / Serie Apple T2 / Laptops con Touch Bar DRM (`appletbdrm`)  
@@ -199,6 +200,10 @@ Quise crear esta solución de forma abierta para que cualquier persona que insta
 
 ☕ **Si deseas apoyar mi trabajo y a mi familia para seguir manteniendo proyectos de código libre:**  
 👉 **[Donar un Tecito en tecito.app/juanjoclassic](https://tecito.app/juanjoclassic)**
+
+🧡 **Planes para Sponsors en Patreon:**  
+Si deseas apoyar de forma continua el mantenimiento de TuxBar y el desarrollo independiente, cuento con planes mensuales organizados para sponsors en:  
+👉 **[https://www.patreon.com/JuanjoClassic](https://www.patreon.com/JuanjoClassic)** (planes Supporter, Open Source Sponsor, Gold Sponsor y Patrocinador Fundador)
 
 * ¡Conectemos en [LinkedIn](https://www.linkedin.com/in/juan-m-97b85681/)
 * Sígueme en [Instagram (@juanjoclassic)](https://www.instagram.com/juanjoclassic/)
