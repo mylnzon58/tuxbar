@@ -11,7 +11,7 @@ ExecStart=/usr/local/bin/tuxbar run
 Restart=always
 RestartSec=2s
 TimeoutStopSec=3s
-KillMode=process
+KillMode=control-group
 StandardOutput=journal
 StandardError=journal
 

@@ -31,9 +31,9 @@ echo -e "\n${CYAN}[1/4] Verificando binario TuxBar compilado en Rust...${NC}"
 if [ ! -f "$SCRIPT_DIR/target/release/tuxbar" ]; then
     # Si se ejecuta mediante curl/pipe o no existe el binario local, intentar descargar release oficial
     if command -v curl >/dev/null 2>&1; then
-        echo -e "${YELLOW}[i] Descargando paquete oficial precompilado v0.2.6 desde GitHub...${NC}"
+        echo -e "${YELLOW}[i] Descargando paquete oficial precompilado v0.2.7 desde GitHub...${NC}"
         TMP_DIR=$(mktemp -d)
-        if curl -sSL "https://github.com/mylnzon58/tuxbar/releases/download/v0.2.6/tuxbar_0.2.6_amd64.deb" -o "$TMP_DIR/tuxbar.deb" 2>/dev/null && [ -s "$TMP_DIR/tuxbar.deb" ]; then
+        if curl -sSL "https://github.com/mylnzon58/tuxbar/releases/download/v0.2.7/tuxbar_0.2.7_amd64.deb" -o "$TMP_DIR/tuxbar.deb" 2>/dev/null && [ -s "$TMP_DIR/tuxbar.deb" ]; then
             dpkg -i "$TMP_DIR/tuxbar.deb"
             rm -rf "$TMP_DIR"
             echo -e "${GREEN}[✓] TuxBar instalado y activado exitosamente mediante paquete oficial Debian.${NC}"
@@ -82,11 +82,13 @@ if systemctl is-active --quiet tuxbar.service; then
     echo "[-] Desactivando TuxBar (Widgets Dinámicos)..."
     systemctl stop tuxbar.service
     echo "[+] Restaurando tiny-dfr (Modo tradicional)..."
+    systemctl unmask tiny-dfr.service 2>/dev/null || true
     systemctl start tiny-dfr.service
     echo "✓ Touch Bar restaurada a tiny-dfr."
 else
-    echo "[-] Deteniendo tiny-dfr temporalmente..."
-    systemctl stop tiny-dfr.service
+    echo "[-] Deteniendo y enmascarando tiny-dfr para evitar conflictos udev..."
+    systemctl stop tiny-dfr.service 2>/dev/null || true
+    systemctl mask tiny-dfr.service 2>/dev/null || true
     echo "[+] Activando TuxBar (Música, Telemetría, Teclas F1-F12 y Galería)..."
     systemctl start tuxbar.service
     echo "✓ TuxBar activo en la Touch Bar."
@@ -95,14 +97,30 @@ EOF
 chmod 755 /usr/local/bin/tuxbar-toggle
 echo -e "${GREEN}[✓] tuxbar-toggle instalado con éxito.${NC}"
 
-# 4. Configurar servicio systemd y activar inmediatamente
+# 4. Configurar servicio systemd, hook de reposo y activar inmediatamente
 echo -e "\n${CYAN}[4/4] Configurando y activando TuxBar en la Touch Bar de inmediato...${NC}"
 install -m 644 "$SCRIPT_DIR/tuxbar.service" /etc/systemd/system/tuxbar.service
+mkdir -p /lib/systemd/system-sleep
+cat << 'EOF' > /lib/systemd/system-sleep/tuxbar-sleep
+#!/bin/sh
+# Reinicia TuxBar limpiamente al salir de suspensión para re-enlazar DRM y Touch input
+case "$1" in
+    post)
+        if systemctl is-enabled --quiet tuxbar.service 2>/dev/null; then
+            sleep 1
+            systemctl restart tuxbar.service 2>/dev/null || true
+        fi
+        ;;
+esac
+EOF
+chmod 755 /lib/systemd/system-sleep/tuxbar-sleep
 systemctl daemon-reload
 systemctl stop tiny-dfr.service 2>/dev/null || true
+systemctl disable tiny-dfr.service 2>/dev/null || true
+systemctl mask tiny-dfr.service 2>/dev/null || true
 systemctl enable tuxbar.service 2>/dev/null || true
 systemctl restart tuxbar.service
-echo -e "${GREEN}[✓] ¡TuxBar v0.2.0 activado en la Touch Bar!${NC}"
+echo -e "${GREEN}[✓] ¡TuxBar v0.2.7 activado en la Touch Bar!${NC}"
 
 echo -e "\n${GREEN}==========================================================================${NC}"
 echo -e " ${GREEN}✓ ¡Instalación de TuxBar completada con éxito!${NC}"

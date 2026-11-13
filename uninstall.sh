@@ -16,12 +16,15 @@ systemctl stop tuxbar.service 2>/dev/null || true
 systemctl disable tuxbar.service 2>/dev/null || true
 
 rm -f /etc/systemd/system/tuxbar.service
+rm -f /lib/systemd/system-sleep/tuxbar-sleep
 rm -f /usr/local/bin/tuxbar
 rm -f /usr/local/bin/tuxbar-toggle
 
 systemctl daemon-reload
 
 echo "[+] Restaurando servicio predeterminado tiny-dfr..."
+systemctl unmask tiny-dfr.service 2>/dev/null || true
+systemctl enable tiny-dfr.service 2>/dev/null || true
 systemctl start tiny-dfr.service 2>/dev/null || true
 
 echo "=== Desinstalación completada con éxito. Touch Bar restaurada a tiny-dfr ==="
