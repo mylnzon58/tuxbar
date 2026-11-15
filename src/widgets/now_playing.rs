@@ -105,7 +105,7 @@ impl Widget for NowPlayingWidget {
                 }
             } else {
                 // Idle state: Clean, prominent prompt without missing emoji glyphs
-                let idle_text = "Toca ▶ para reproducir";
+                let idle_text = "Dotknij ▶ aby odtworzyć";
                 fb.draw_text_clipped(font, idle_text, cur_x + 6, btn_y + 38, 20.0, Color::GRAY, max_x);
             }
         }

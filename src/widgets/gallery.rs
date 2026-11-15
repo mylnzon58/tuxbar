@@ -114,6 +114,10 @@ impl GalleryWidget {
         let mut dirs_to_check = Vec::new();
 
         dirs_to_check.push(session.home.join("Pictures/Capturas de pantalla"));
+        dirs_to_check.push(session.home.join("Obrazy/Zrzuty ekranu"));
+        dirs_to_check.push(session.home.join("Obrazy"));
+        dirs_to_check.push(session.home.join("Pulpit"));
+        dirs_to_check.push(session.home.join("Pobrane"));
         dirs_to_check.push(session.home.join("Pictures/Screenshots"));
         dirs_to_check.push(session.home.join("Pictures"));
         dirs_to_check.push(session.home.join("Desktop"));
@@ -364,8 +368,8 @@ impl Widget for GalleryWidget {
         let open_w = 100;
         let open_rect = Rect::new(cur_x, btn_y, open_w, btn_h);
         fb.draw_rounded_rect(open_rect, 6, Color::ACCENT);
-        let open_tw = font.measure_text_width("ABRIR", 20.0);
-        fb.draw_text(font, "ABRIR", cur_x + (open_w as i32 - open_tw as i32) / 2, btn_y + 38, 20.0, Color::BLACK);
+        let open_tw = font.measure_text_width("OTWÓRZ", 20.0);
+        fb.draw_text(font, "OTWÓRZ", cur_x + (open_w as i32 - open_tw as i32) / 2, btn_y + 38, 20.0, Color::BLACK);
         cur_x += open_w as i32 + 6;
 
         let next_w = 64;
@@ -387,7 +391,7 @@ impl Widget for GalleryWidget {
             let max_text_x = cur_x + badge_w as i32 - 8;
             fb.draw_text_clipped(font, &item.name, cur_x + 8, btn_y + 42, 16.0, Color::WHITE, max_text_x);
         } else {
-            fb.draw_text(font, "Sin fotos", cur_x + 12, btn_y + 36, 16.0, Color::GRAY);
+            fb.draw_text(font, "Brak zdjęć", cur_x + 12, btn_y + 36, 16.0, Color::GRAY);
         }
         cur_x += badge_w as i32 + 12;
 
