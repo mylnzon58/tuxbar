@@ -140,6 +140,7 @@ fn capture_loop(telemetry: Arc<Mutex<AudioTelemetry>>) {
                     }
                 }
                 let _ = child.kill();
+                let _ = child.wait();
             }
             Err(_) => {
                 // If audio service is not running or suspended, wait and retry
@@ -193,6 +194,7 @@ fn spawn_audio_process() -> std::io::Result<Child> {
     let mut cmd = Command::new("parec");
     cmd.args([
         "--rate=8000",
+        "--latency-msec=30",
         "--channels=1",
         "--format=s16le",
         "-d",
