@@ -129,7 +129,31 @@ impl TelemetryProvider {
         (0, 0)
     }
 
-    fn read_cpu_temp() -> f32 {
+    fn read_cpu_temp() -> f32 {// Priority 0: Apple Silicon (Asahi) - no CPU die sensor exposed,
+        // so report the hottest sensor of macsmc_hwmon
+        if let Ok(entries) = fs::read_dir("/sys/class/hwmon") {
+            for entry in entries.flatten() {
+                let p = entry.path();
+                if let Ok(name) = fs::read_to_string(p.join("name")) {
+                    if name.trim() == "macsmc_hwmon" {
+                        let mut max_t = 0.0f32;
+                        for i in 1..=16 {
+                            if let Ok(s) = fs::read_to_string(p.join(format!("temp{i}_input"))) {
+                                if let Ok(v) = s.trim().parse::<f32>() {
+                                    let t = if v > 1000.0 { v / 1000.0 } else { v };
+                                    if (10.0..=115.0).contains(&t) && t > max_t {
+                                        max_t = t;
+                                    }
+                                }
+                            }
+                        }
+                        if max_t > 0.0 {
+                            return max_t;
+                        }
+                    }
+                }
+            }
+        }
         // Priority 1: Intel coretemp hwmon Package id 0 (true CPU package temperature)
         if let Ok(entries) = fs::read_dir("/sys/class/hwmon") {
             for entry in entries.flatten() {

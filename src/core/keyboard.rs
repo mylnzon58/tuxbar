@@ -24,7 +24,7 @@ impl KeyboardListener {
     pub fn find_apple_keyboard() -> Option<Self> {
         for (path, dev) in evdev::enumerate() {
             let name = dev.name().unwrap_or("").to_lowercase();
-            if name.contains("apple internal keyboard") {
+            if name.contains("apple internal keyboard") || name.contains("apple mtp keyboard") {
                 if let Some(keys) = dev.supported_keys() {
                     if keys.contains(Key::KEY_FN) {
                         if let Ok(listener) = Self::open(&path) {
