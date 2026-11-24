@@ -2,12 +2,12 @@
 
 **The Pure & Dynamic Touch Bar Engine for Linux | MPRIS Music, Hardware Telemetry & Extensible Widgets**
 
-[![License: GPL-3.0](https://img.shields.io/badge/License-GPL--3.0-blue.svg?style=flat-square)](LICENSE)
-[![Rust](https://img.shields.io/badge/Rust-100%25_Pure_Safe-orange.svg?style=flat-square&logo=rust)](https://www.rust-lang.org/)
-[![DRM](https://img.shields.io/badge/DRM-KMS_Zero_C_Deps-emerald.svg?style=flat-square&logo=linux)](https://en.wikipedia.org/wiki/Direct_Rendering_Manager)
-[![Ubuntu 24.04](https://img.shields.io/badge/Ubuntu-24.04_LTS_Verified-E95420.svg?style=flat-square&logo=ubuntu)](https://ubuntu.com/)
-[![Web / Live Previews](https://img.shields.io/badge/Documentaci%C3%B3n-GitHub_Pages-77216F.svg?style=flat-square)](https://mylnzon58.github.io/tuxbar/)
-[![Sponsor on Patreon](https://img.shields.io/badge/Patreon-Planes_para_Sponsors-FF424D.svg?style=flat-square&logo=patreon)](https://www.patreon.com/JuanjoClassic)
+[![License: GPL-3.0](assets/badges/license-gpl-3-0-blue-svg-sq-96b92b.svg)](LICENSE)
+[![Rust](assets/badges/rust-100-pure-safe-orange-svg-sq-044c45.svg)](https://www.rust-lang.org/)
+[![DRM](assets/badges/drm-kms-zero-c-deps-emerald-svg-sq-dbf46d.svg)](https://en.wikipedia.org/wiki/Direct_Rendering_Manager)
+[![Ubuntu 24.04](assets/badges/ubuntu-24-04-lts-verified-e95420-svg-sq-1512aa.svg)](https://ubuntu.com/)
+[![Web / Live Previews](assets/badges/documentaci-n-github-pages-77216f-svg-sq-3b3a5b.svg)](https://mylnzon58.github.io/tuxbar/)
+[![Sponsor on Patreon](assets/badges/patreon-planes-para-sponsors-ff424d-svg-sq-db12ee.svg)](https://www.patreon.com/JuanjoClassic)
 
 > **Autor:** [Juan José Monzón (@mylnzon58)](https://github.com/mylnzon58)  
 > **Hardware:** Apple MacBook Pro 16,1 (A2141) / Serie Apple T2 / Laptops con Touch Bar DRM (`appletbdrm`)  
